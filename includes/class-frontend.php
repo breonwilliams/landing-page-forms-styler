@@ -30,7 +30,6 @@ class LPFS_Frontend {
             $settings = $preset['settings'] ?? [];
 
             // Default base styles
-            echo ".{$class} form { background:#fff; padding:2rem; border-radius:0.5rem; max-width:600px; margin:auto; box-shadow:0 2px 6px rgba(0,0,0,0.1); }\n";
             echo ".{$class} label { display:block; margin-bottom:0.25rem; font-weight:500; }\n";
             echo ".{$class} input, .{$class} select, .{$class} textarea, .{$class} button { width:100%; padding:0.5rem; margin-bottom:1rem; border:1px solid #ced4da; border-radius:0.375rem; font-size:1rem; }\n";
             echo ".{$class} input[type=\"radio\"], .{$class} input[type=\"checkbox\"] { width:auto; margin-right:0.5rem; }\n";
