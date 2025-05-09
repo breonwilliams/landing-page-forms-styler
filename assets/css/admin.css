@@ -148,3 +148,42 @@
   background-color: var(--button-hover-bg-color);
   color: var(--button-hover-text-color);
 }
+
+/* Two-column layout for form and preview */
+.lpfs-layout-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -15px; /* Negative margin for gutters */
+}
+
+.lpfs-form-container {
+    flex: 0 0 60%;
+    max-width: 60%;
+    padding: 0 15px;
+    box-sizing: border-box;
+}
+
+.lpfs-preview-container {
+    flex: 0 0 40%;
+    max-width: 40%;
+    padding: 0 15px;
+    box-sizing: border-box;
+    position: sticky;
+    top: 32px; /* WP admin bar height */
+}
+
+/* Make the preview stay in view while scrolling */
+@media screen and (min-width: 783px) {
+    .lpfs-preview-container {
+        align-self: flex-start;
+    }
+}
+
+/* Responsive layout for smaller screens */
+@media screen and (max-width: 782px) {
+    .lpfs-form-container,
+    .lpfs-preview-container {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}

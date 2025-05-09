@@ -128,318 +128,318 @@ class LPFS_Admin
                 </tbody>
             </table>
 
-            <!-- 2. Add/Edit Form -->
-            <h2>
-                <?php
-                echo isset($edit_index)
-                    ? esc_html__('Edit Style', 'landing-page-forms-styler')
-                    : esc_html__('Add New Style', 'landing-page-forms-styler');
-                ?>
-            </h2>
-            <form id="lpfs-form" method="post" action="options.php">
-                <?php settings_fields('lpfs_styles_group'); ?>
-                <?php
-                // Force WP to come back here (with ?preset=…)
-                printf(
-                    '<input type="hidden" name="_wp_http_referer" value="%s" />',
-                    esc_url_raw($_SERVER['REQUEST_URI'])
-                );
-                ?>
+            <<!-- 2. Add/Edit Form and Preview Side by Side -->
+                <div class="lpfs-layout-container">
+                    <div class="lpfs-form-container">
+                        <h2>
+                            <?php
+                            echo isset($edit_index)
+                                ? esc_html__('Edit Style', 'landing-page-forms-styler')
+                                : esc_html__('Add New Style', 'landing-page-forms-styler');
+                            ?>
+                        </h2>
+                        <form id="lpfs-form" method="post" action="options.php">
+                            <?php settings_fields('lpfs_styles_group'); ?>
+                            <?php
+                            // Force WP to come back here (with ?preset=…)
+                            printf(
+                                '<input type="hidden" name="_wp_http_referer" value="%s" />',
+                                esc_url_raw($_SERVER['REQUEST_URI'])
+                            );
+                            ?>
 
-                <?php $index = isset($edit_index) ? $edit_index : count($presets); ?>
-                <input type="hidden" name="lpfs_edit_index" value="<?php echo esc_attr($index); ?>">
-                <input type="hidden" name="<?php echo esc_attr(self::OPTION_KEY); ?>[<?php echo $index; ?>]" value="1">
+                            <?php $index = isset($edit_index) ? $edit_index : count($presets); ?>
+                            <input type="hidden" name="lpfs_edit_index" value="<?php echo esc_attr($index); ?>">
+                            <input type="hidden" name="<?php echo esc_attr(self::OPTION_KEY); ?>[<?php echo $index; ?>]" value="1">
 
-                <?php
-                // Preserve all other existing presets so they don't get wiped out
-                if (is_array($presets)) {
-                    foreach ($presets as $i => $p) {
-                        // skip the one we are editing / adding
-                        if ($i === $index) {
-                            continue;
-                        }
-                        // Title & Class
-                ?>
-                        <input type="hidden"
-                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][title]"
-                            value="<?php echo esc_attr($p['title']); ?>">
-                        <input type="hidden"
-                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][custom_class]"
-                            value="<?php echo esc_attr($p['custom_class']); ?>">
-                        <?php
-                        // All settings
-                        if (! empty($p['settings']) && is_array($p['settings'])) {
-                            foreach ($p['settings'] as $key => $val) {
-                        ?>
-                                <input type="hidden"
-                                    name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][settings][<?php echo $key; ?>]"
-                                    value="<?php echo esc_attr($val); ?>">
-                <?php
+                            <?php
+                            // Preserve all other existing presets so they don't get wiped out
+                            if (is_array($presets)) {
+                                foreach ($presets as $i => $p) {
+                                    // skip the one we are editing / adding
+                                    if ($i === $index) {
+                                        continue;
+                                    }
+                                    // Title & Class
+                            ?>
+                                    <input type="hidden"
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][title]"
+                                        value="<?php echo esc_attr($p['title']); ?>">
+                                    <input type="hidden"
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][custom_class]"
+                                        value="<?php echo esc_attr($p['custom_class']); ?>">
+                                    <?php
+                                    // All settings
+                                    if (! empty($p['settings']) && is_array($p['settings'])) {
+                                        foreach ($p['settings'] as $key => $val) {
+                                    ?>
+                                            <input type="hidden"
+                                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][settings][<?php echo $key; ?>]"
+                                                value="<?php echo esc_attr($val); ?>">
+                            <?php
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }
-                }
-                ?>
+                            ?>
 
-                <table class="form-table">
+                            <table class="form-table">
 
-                    <!-- Title -->
-                    <tr>
-                        <th><label for="lpfs-title"><?php esc_html_e('Title', 'landing-page-forms-styler'); ?></label></th>
-                        <td>
-                            <input
-                                required
-                                type="text"
-                                id="lpfs-title"
-                                class="regular-text"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][title]"
-                                value="<?php echo esc_attr($current['title']); ?>">
-                        </td>
-                    </tr>
+                                <!-- Title -->
+                                <tr>
+                                    <th><label for="lpfs-title"><?php esc_html_e('Title', 'landing-page-forms-styler'); ?></label></th>
+                                    <td>
+                                        <input
+                                            required
+                                            type="text"
+                                            id="lpfs-title"
+                                            class="regular-text"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][title]"
+                                            value="<?php echo esc_attr($current['title']); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Custom Class -->
-                    <tr>
-                        <th><label for="lpfs-class"><?php esc_html_e('Custom Class', 'landing-page-forms-styler'); ?></label></th>
-                        <td>
-                            <input
-                                required
-                                type="text"
-                                id="lpfs-class"
-                                class="regular-text"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][custom_class]"
-                                value="<?php echo esc_attr($current['custom_class']); ?>">
-                        </td>
-                    </tr>
+                                <!-- Custom Class -->
+                                <tr>
+                                    <th><label for="lpfs-class"><?php esc_html_e('Custom Class', 'landing-page-forms-styler'); ?></label></th>
+                                    <td>
+                                        <input
+                                            required
+                                            type="text"
+                                            id="lpfs-class"
+                                            class="regular-text"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][custom_class]"
+                                            value="<?php echo esc_attr($current['custom_class']); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Field Border Radius -->
-                    <tr>
-                        <th><?php esc_html_e('Field Border Radius (px)', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="number"
-                                min="0"
-                                class="lpfs-number-field"
-                                data-var="input-border-radius"
-                                data-unit="px"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_radius]"
-                                value="<?php echo esc_attr($current['settings']['input_border_radius'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Field Border Radius -->
+                                <tr>
+                                    <th><?php esc_html_e('Field Border Radius (px)', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            class="lpfs-number-field"
+                                            data-var="input-border-radius"
+                                            data-unit="px"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_radius]"
+                                            value="<?php echo esc_attr($current['settings']['input_border_radius'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Field Border Width -->
-                    <tr>
-                        <th><?php esc_html_e('Field Border Width (px)', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="number"
-                                min="0"
-                                class="lpfs-number-field"
-                                data-var="input-border-width"
-                                data-unit="px"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_width]"
-                                value="<?php echo esc_attr($current['settings']['input_border_width'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Field Border Width -->
+                                <tr>
+                                    <th><?php esc_html_e('Field Border Width (px)', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            class="lpfs-number-field"
+                                            data-var="input-border-width"
+                                            data-unit="px"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_width]"
+                                            value="<?php echo esc_attr($current['settings']['input_border_width'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Field Border Color -->
-                    <tr>
-                        <th><?php esc_html_e('Field Border Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="input-border-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_color]"
-                                value="<?php echo esc_attr($current['settings']['input_border_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Field Border Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Field Border Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="input-border-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_color]"
+                                            value="<?php echo esc_attr($current['settings']['input_border_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Input Text Color -->
-                    <tr>
-                        <th><?php esc_html_e('Input Text Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="input-text-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_text_color]"
-                                value="<?php echo esc_attr($current['settings']['input_text_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Input Text Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Input Text Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="input-text-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_text_color]"
+                                            value="<?php echo esc_attr($current['settings']['input_text_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Input Background Color -->
-                    <tr>
-                        <th><?php esc_html_e('Input Background Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="input-bg-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_bg_color]"
-                                value="<?php echo esc_attr($current['settings']['input_bg_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Input Background Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Input Background Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="input-bg-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_bg_color]"
+                                            value="<?php echo esc_attr($current['settings']['input_bg_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Input Focus Border Color -->
-                    <tr>
-                        <th><?php esc_html_e('Input Focus Border Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="input-focus-border-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_focus_border_color]"
-                                value="<?php echo esc_attr($current['settings']['input_focus_border_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Input Focus Border Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Input Focus Border Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="input-focus-border-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_focus_border_color]"
+                                            value="<?php echo esc_attr($current['settings']['input_focus_border_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Label Color -->
-                    <tr>
-                        <th><?php esc_html_e('Label Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="label-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_color]"
-                                value="<?php echo esc_attr($current['settings']['label_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Label Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Label Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="label-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_color]"
+                                            value="<?php echo esc_attr($current['settings']['label_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Button Border Radius -->
-                    <tr>
-                        <th><?php esc_html_e('Button Border Radius (px)', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="number"
-                                min="0"
-                                class="lpfs-number-field"
-                                data-var="button-border-radius"
-                                data-unit="px"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_radius]"
-                                value="<?php echo esc_attr($current['settings']['button_border_radius'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Button Border Radius -->
+                                <tr>
+                                    <th><?php esc_html_e('Button Border Radius (px)', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            class="lpfs-number-field"
+                                            data-var="button-border-radius"
+                                            data-unit="px"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_radius]"
+                                            value="<?php echo esc_attr($current['settings']['button_border_radius'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Button Border Color -->
-                    <tr>
-                        <th><?php esc_html_e('Button Border Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="button-border-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_color]"
-                                value="<?php echo esc_attr($current['settings']['button_border_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Button Border Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Button Border Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="button-border-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_color]"
+                                            value="<?php echo esc_attr($current['settings']['button_border_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Button Background Color -->
-                    <tr>
-                        <th><?php esc_html_e('Button Background Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="button-bg-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_bg_color]"
-                                value="<?php echo esc_attr($current['settings']['button_bg_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Button Background Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Button Background Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="button-bg-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_bg_color]"
+                                            value="<?php echo esc_attr($current['settings']['button_bg_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Button Text Color -->
-                    <tr>
-                        <th><?php esc_html_e('Button Text Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="button-text-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_text_color]"
-                                value="<?php echo esc_attr($current['settings']['button_text_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Button Text Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Button Text Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="button-text-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_text_color]"
+                                            value="<?php echo esc_attr($current['settings']['button_text_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Button Hover Background Color -->
-                    <tr>
-                        <th><?php esc_html_e('Button Hover Background Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="button-hover-bg-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_bg_color]"
-                                value="<?php echo esc_attr($current['settings']['button_hover_bg_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Button Hover Background Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Button Hover Background Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="button-hover-bg-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_bg_color]"
+                                            value="<?php echo esc_attr($current['settings']['button_hover_bg_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
 
-                    <!-- Button Hover Text Color -->
-                    <tr>
-                        <th><?php esc_html_e('Button Hover Text Color', 'landing-page-forms-styler'); ?></th>
-                        <td>
-                            <input
-                                type="text"
-                                class="lpfs-color-field"
-                                data-var="button-hover-text-color"
-                                name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_text_color]"
-                                value="<?php echo esc_attr($current['settings']['button_hover_text_color'] ?? ''); ?>">
-                        </td>
-                    </tr>
+                                <!-- Button Hover Text Color -->
+                                <tr>
+                                    <th><?php esc_html_e('Button Hover Text Color', 'landing-page-forms-styler'); ?></th>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="lpfs-color-field"
+                                            data-var="button-hover-text-color"
+                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_text_color]"
+                                            value="<?php echo esc_attr($current['settings']['button_hover_text_color'] ?? ''); ?>">
+                                    </td>
+                                </tr>
+                            </table>
 
-
-                </table>
-
-                <?php submit_button(); ?>
-            </form>
-
-            <!-- Live Preview -->
-            <h2><?php esc_html_e('Live Preview', 'landing-page-forms-styler'); ?></h2>
-            <div id="lpfs-preview"
-                class="<?php echo esc_attr($current['custom_class']); ?>"
-                style="padding:1rem;
-            background:#f1f1f1;
-            max-width:400px;
-            border:1px solid #ccc;
-            border-radius:.5rem;">
-
-                <form>
-                    <div class="form-group">
-                        <label><?php esc_html_e('Text Input', 'landing-page-forms-styler'); ?></label>
-                        <input type="text" placeholder="">
+                            <?php submit_button(); ?>
+                        </form>
                     </div>
 
-                    <div class="form-group">
-                        <label><?php esc_html_e('Email Input', 'landing-page-forms-styler'); ?></label>
-                        <input type="email" placeholder="">
+                    <div class="lpfs-preview-container">
+                        <h2><?php esc_html_e('Live Preview', 'landing-page-forms-styler'); ?></h2>
+                        <div id="lpfs-preview"
+                            class="<?php echo esc_attr($current['custom_class']); ?>"
+                            style="padding:1rem;
+                        background:#f1f1f1;
+                        max-width:100%;
+                        border:1px solid #ccc;
+                        border-radius:.5rem;">
+
+                            <form>
+                                <div class="form-group">
+                                    <label><?php esc_html_e('Text Input', 'landing-page-forms-styler'); ?></label>
+                                    <input type="text" placeholder="">
+                                </div>
+
+                                <div class="form-group">
+                                    <label><?php esc_html_e('Email Input', 'landing-page-forms-styler'); ?></label>
+                                    <input type="email" placeholder="">
+                                </div>
+
+                                <div class="form-group">
+                                    <label><?php esc_html_e('Textarea', 'landing-page-forms-styler'); ?></label>
+                                    <textarea rows="3"></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><?php esc_html_e('Select', 'landing-page-forms-styler'); ?></label>
+                                    <select>
+                                        <option><?php esc_html_e('Option 1', 'landing-page-forms-styler'); ?></option>
+                                        <option><?php esc_html_e('Option 2', 'landing-page-forms-styler'); ?></option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group form-check">
+                                    <input type="checkbox" id="lpfs-check">
+                                    <label for="lpfs-check"><?php esc_html_e('Checkbox', 'landing-page-forms-styler'); ?></label>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit"><?php esc_html_e('Submit', 'landing-page-forms-styler'); ?></button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-
-                    <div class="form-group">
-                        <label><?php esc_html_e('Textarea', 'landing-page-forms-styler'); ?></label>
-                        <textarea rows="3"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label><?php esc_html_e('Select', 'landing-page-forms-styler'); ?></label>
-                        <select>
-                            <option><?php esc_html_e('Option 1', 'landing-page-forms-styler'); ?></option>
-                            <option><?php esc_html_e('Option 2', 'landing-page-forms-styler'); ?></option>
-                        </select>
-                    </div>
-
-                    <div class="form-group form-check">
-                        <input type="checkbox" id="lpfs-check">
-                        <label for="lpfs-check"><?php esc_html_e('Checkbox', 'landing-page-forms-styler'); ?></label>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit"><?php esc_html_e('Submit', 'landing-page-forms-styler'); ?></button>
-                    </div>
-                </form>
-            </div>
-
-
-        </div>
-<?php
+                </div>
+        <?php
     }
     /**
      * Sanitize the presets array
