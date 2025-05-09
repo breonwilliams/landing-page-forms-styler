@@ -1,0 +1,150 @@
+/* ===== Preview defaults keyed to CSS vars ===== */
+#lpfs-preview {
+  /* default values */
+  --input-border-radius: .375rem;
+  --input-border-width: 1px;
+  --input-border-color: #ced4da;
+  --input-text-color: #000;
+  --input-bg-color: #fff;
+  --input-focus-border-color: #80bdff;
+
+  --label-color: #000;
+
+  --button-border-radius: .375rem;
+  --button-border-width: 1px;
+  --button-border-color: #ced4da;
+  --button-bg-color: #0073aa;
+  --button-text-color: #fff;
+  --button-hover-bg-color: #005177;
+  --button-hover-text-color: #fff;
+}
+
+#lpfs-preview form {
+  background: #fff;
+  padding: 2rem;
+  border-radius: .5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+#lpfs-preview label {
+  color: var(--label-color);
+  display: block;
+  margin-bottom: .25rem;
+  font-weight: 500;
+}
+#lpfs-preview input,
+#lpfs-preview textarea,
+#lpfs-preview select {
+  border-radius: var(--input-border-radius);
+  border-width: var(--input-border-width);
+  border-color: var(--input-border-color);
+  color: var(--input-text-color);
+  background-color: var(--input-bg-color);
+  padding: .5rem;
+  margin-bottom: 1rem;
+}
+#lpfs-preview input:focus,
+#lpfs-preview textarea:focus,
+#lpfs-preview select:focus {
+  border-color: var(--input-focus-border-color);
+}
+#lpfs-preview button {
+  border-radius: var(--button-border-radius);
+  border-width: var(--button-border-width);
+  border-color: var(--button-border-color);
+  background-color: var(--button-bg-color);
+  color: var(--button-text-color);
+  padding: .5rem;
+  cursor: pointer;
+}
+#lpfs-preview button:hover {
+  background-color: var(--button-hover-bg-color);
+  color: var(--button-hover-text-color);
+}
+
+/* ===== Front-End Default Styles for Admin Live Preview ===== */
+#lpfs-preview form {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  max-width: 100%;
+  margin: auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Make sure everything sizes correctly */
+#lpfs-preview form *,
+#lpfs-preview form *::before,
+#lpfs-preview form *::after {
+  box-sizing: border-box;
+}
+
+#lpfs-preview label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  color: var(--label-color);
+}
+
+#lpfs-preview input,
+#lpfs-preview select,
+#lpfs-preview textarea,
+#lpfs-preview button {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: var(--input-border-width) solid var(--input-border-color);
+  border-radius: var(--input-border-radius);
+  font-size: 1rem;
+  color: var(--input-text-color);
+  background-color: var(--input-bg-color);
+  line-height: 1.5;
+}
+
+#lpfs-preview input[type="radio"],
+#lpfs-preview input[type="checkbox"] {
+  width: auto;
+  margin-right: 0.5rem;
+}
+
+#lpfs-preview textarea {
+  resize: vertical;
+}
+
+#lpfs-preview select {
+  appearance: none;
+}
+
+#lpfs-preview input:focus,
+#lpfs-preview textarea:focus,
+#lpfs-preview select:focus {
+  outline: none;
+  border-color: var(--input-focus-border-color);
+}
+
+#lpfs-preview .form-group {
+  margin-bottom: 1rem;
+}
+
+#lpfs-preview .form-check {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+#lpfs-preview .form-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+#lpfs-preview button {
+  border: var(--button-border-width) solid var(--button-border-color);
+  border-radius: var(--button-border-radius);
+  background-color: var(--button-bg-color);
+  color: var(--button-text-color);
+  cursor: pointer;
+}
+
+#lpfs-preview button:hover {
+  background-color: var(--button-hover-bg-color);
+  color: var(--button-hover-text-color);
+}
