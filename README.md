@@ -1,6 +1,6 @@
 # Landing Page Forms Styler
 
-**Contributors:** yourname  
+**Contributors:** Breon Willams 
 **Tags:** forms, styling, Elementor, landing-pages  
 **Requires at least:** 5.0  
 **Tested up to:** 6.8  
