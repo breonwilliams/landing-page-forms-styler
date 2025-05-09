@@ -3,7 +3,10 @@
 Plugin Name: Landing Page Forms Styler
 Description: Create and apply re-usable form style presets via CSS classes.
 Version:     1.0.0
-Author:      Your Name
+Author:      Breon Williams
+Author URI:  https://breonwilliams.com
+License:     GPL2
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: landing-page-forms-styler
 */
 
