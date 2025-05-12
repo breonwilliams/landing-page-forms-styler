@@ -431,11 +431,7 @@ class LPFS_Admin
                     <h2><?php esc_html_e('Live Preview', 'landing-page-forms-styler'); ?></h2>
                     <div id="lpfs-preview"
                         class="<?php echo esc_attr($current['custom_class']); ?>"
-                        style="padding:1rem;
-                        background:#f1f1f1;
-                        max-width:100%;
-                        border:1px solid #ccc;
-                        border-radius:.5rem;">
+                        style="max-width:100%;">
 
                         <form>
                             <div class="form-group">
