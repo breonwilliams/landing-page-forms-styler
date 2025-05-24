@@ -31,7 +31,7 @@ class LPFS_Frontend {
 
             // Default base styles
             echo ".{$class} label { display:block; margin-bottom:0.25rem; font-weight:500; }\n";
-            echo ".{$class} input, .{$class} select, .{$class} textarea, .{$class} button { width:100%; padding:0.5rem; margin-bottom:1rem; border:1px solid #ced4da; border-radius:0.375rem; font-size:1rem; }\n";
+            echo ".{$class} input, .{$class} select, .{$class} textarea, .{$class} button { width:100%; padding:0.5rem; margin-bottom:1rem; border:1px solid #ced4da; border-radius:0.375rem; font-size:1rem; height:auto !important; }\n";
             echo ".{$class} input[type=\"radio\"], .{$class} input[type=\"checkbox\"] { width:auto; margin-right:0.5rem; }\n";
             echo ".{$class} input[type=\"checkbox\"], input[type=\"radio\"] { margin-bottom:0; }\n";
             echo ".{$class} .form-group { margin-bottom:1rem; }\n";
@@ -80,6 +80,18 @@ class LPFS_Frontend {
             }
             if (isset($settings['button_hover_text_color'])) {
                 echo ".{$class} button:hover { color: {$settings['button_hover_text_color']} !important; }\n";
+            }
+            if (isset($settings['button_hover_border_color'])) {
+                echo ".{$class} button:hover { border-color: {$settings['button_hover_border_color']} !important; }\n";
+            }
+            if (isset($settings['button_font_size'])) {
+                echo ".{$class} button { font-size: {$settings['button_font_size']}px !important; }\n";
+            }
+            if (isset($settings['button_font_weight'])) {
+                echo ".{$class} button { font-weight: {$settings['button_font_weight']} !important; }\n";
+            }
+            if (isset($settings['button_line_height'])) {
+                echo ".{$class} button { line-height: {$settings['button_line_height']} !important; }\n";
             }
         }
 

@@ -5,7 +5,7 @@ jQuery(function($){
   }
 
   // initialize from saved controls
-  $('.lpfs-color-field, .lpfs-number-field').each(function(){
+  $('.lpfs-color-field, .lpfs-number-field, .lpfs-select-field').each(function(){
     var $field = $(this),
         name   = $field.data('var'),    // see step 3
         unit   = $field.data('unit') || '',
@@ -37,6 +37,14 @@ jQuery(function($){
         name  = $f.data('var'),
         unit  = $f.data('unit') || '',
         val   = $f.val() + unit;
+    setVar(name, val);
+  });
+
+  // when a select field changes (for font weight)
+  $('.lpfs-select-field').on('change', function(){
+    var $f    = $(this),
+        name  = $f.data('var'),
+        val   = $f.val();
     setVar(name, val);
   });
 });

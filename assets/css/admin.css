@@ -17,6 +17,10 @@
   --button-text-color: #fff;
   --button-hover-bg-color: #005177;
   --button-hover-text-color: #fff;
+  --button-hover-border-color: #005177;
+  --button-font-size: 1rem;
+  --button-font-weight: 400;
+  --button-line-height: 1.5;
 }
 
 #lpfs-preview form {
@@ -53,12 +57,16 @@
   border-color: var(--button-border-color);
   background-color: var(--button-bg-color);
   color: var(--button-text-color);
+  font-size: var(--button-font-size);
+  font-weight: var(--button-font-weight);
+  line-height: var(--button-line-height);
   padding: .5rem;
   cursor: pointer;
 }
 #lpfs-preview button:hover {
   background-color: var(--button-hover-bg-color);
   color: var(--button-hover-text-color);
+  border-color: var(--button-hover-border-color);
 }
 
 /* ===== Front-End Default Styles for Admin Live Preview ===== */
@@ -94,10 +102,10 @@
   margin-bottom: 1rem;
   border: var(--input-border-width) solid var(--input-border-color);
   border-radius: var(--input-border-radius);
-  font-size: 1rem;
+  font-size: var(--button-font-size);
   color: var(--input-text-color);
   background-color: var(--input-bg-color);
-  line-height: 1.5;
+  line-height: var(--button-line-height);
 }
 
 #lpfs-preview input[type="radio"],
@@ -142,6 +150,10 @@
   border-radius: var(--button-border-radius);
   background-color: var(--button-bg-color);
   color: var(--button-text-color);
+  font-size: var(--button-font-size) !important;
+  font-weight: var(--button-font-weight) !important;
+  line-height: var(--button-line-height) !important;
+  height: auto !important;
   cursor: pointer;
 }
 

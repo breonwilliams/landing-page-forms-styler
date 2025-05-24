@@ -421,6 +421,73 @@ class LPFS_Admin
                                         value="<?php echo esc_attr($current['settings']['button_hover_text_color'] ?? ''); ?>">
                                 </td>
                             </tr>
+
+                            <!-- Button Hover Border Color -->
+                            <tr>
+                                <th><?php esc_html_e('Button Hover Border Color', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <input
+                                        type="text"
+                                        class="lpfs-color-field"
+                                        data-var="button-hover-border-color"
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_border_color]"
+                                        value="<?php echo esc_attr($current['settings']['button_hover_border_color'] ?? ''); ?>">
+                                </td>
+                            </tr>
+
+                            <!-- Button Text Font Size -->
+                            <tr>
+                                <th><?php esc_html_e('Button Text Font Size (px)', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        class="lpfs-number-field"
+                                        data-var="button-font-size"
+                                        data-unit="px"
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_size]"
+                                        value="<?php echo esc_attr($current['settings']['button_font_size'] ?? ''); ?>">
+                                </td>
+                            </tr>
+
+                            <!-- Button Text Font Weight -->
+                            <tr>
+                                <th><?php esc_html_e('Button Text Font Weight', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <select
+                                        class="lpfs-select-field"
+                                        data-var="button-font-weight"
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_weight]">
+                                        <option value=""><?php esc_html_e('Default', 'landing-page-forms-styler'); ?></option>
+                                        <option value="100" <?php selected($current['settings']['button_font_weight'] ?? '', '100'); ?>>100 (Thin)</option>
+                                        <option value="200" <?php selected($current['settings']['button_font_weight'] ?? '', '200'); ?>>200 (Extra Light)</option>
+                                        <option value="300" <?php selected($current['settings']['button_font_weight'] ?? '', '300'); ?>>300 (Light)</option>
+                                        <option value="400" <?php selected($current['settings']['button_font_weight'] ?? '', '400'); ?>>400 (Normal)</option>
+                                        <option value="500" <?php selected($current['settings']['button_font_weight'] ?? '', '500'); ?>>500 (Medium)</option>
+                                        <option value="600" <?php selected($current['settings']['button_font_weight'] ?? '', '600'); ?>>600 (Semi Bold)</option>
+                                        <option value="700" <?php selected($current['settings']['button_font_weight'] ?? '', '700'); ?>>700 (Bold)</option>
+                                        <option value="800" <?php selected($current['settings']['button_font_weight'] ?? '', '800'); ?>>800 (Extra Bold)</option>
+                                        <option value="900" <?php selected($current['settings']['button_font_weight'] ?? '', '900'); ?>>900 (Black)</option>
+                                    </select>
+                                </td>
+                            </tr>
+
+                            <!-- Button Text Line Height -->
+                            <tr>
+                                <th><?php esc_html_e('Button Text Line Height', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
+                                        class="lpfs-number-field"
+                                        data-var="button-line-height"
+                                        data-unit=""
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_line_height]"
+                                        value="<?php echo esc_attr($current['settings']['button_line_height'] ?? ''); ?>">
+                                    <p class="description"><?php esc_html_e('Use values like 1.2, 1.5, etc. Leave empty for default.', 'landing-page-forms-styler'); ?></p>
+                                </td>
+                            </tr>
                         </table>
 
                         <?php submit_button(); ?>
@@ -488,7 +555,8 @@ public function sanitize_presets($input)
     $numeric_fields = [
         'input_border_radius',
         'input_border_width',
-        'button_border_radius'
+        'button_border_radius',
+        'button_font_size'
     ];
 
     $color_fields = [
@@ -501,7 +569,8 @@ public function sanitize_presets($input)
         'button_border_color',
         'button_text_color',
         'button_hover_bg_color',
-        'button_hover_text_color'
+        'button_hover_text_color',
+        'button_hover_border_color'
     ];
 
     // Check if we're adding or updating
@@ -536,6 +605,19 @@ public function sanitize_presets($input)
             if (isset($raw[$field])) {
                 $s[$field] = sanitize_hex_color($raw[$field]);
             }
+        }
+
+        // Process font weight (string field)
+        if (isset($raw['button_font_weight']) && !empty($raw['button_font_weight'])) {
+            $allowed_weights = ['100', '200', '300', '400', '500', '600', '700', '800', '900'];
+            if (in_array($raw['button_font_weight'], $allowed_weights)) {
+                $s['button_font_weight'] = $raw['button_font_weight'];
+            }
+        }
+
+        // Handle line height as decimal
+        if (isset($raw['button_line_height']) && !empty($raw['button_line_height'])) {
+            $s['button_line_height'] = floatval($raw['button_line_height']);
         }
 
         $clean[$idx] = [
