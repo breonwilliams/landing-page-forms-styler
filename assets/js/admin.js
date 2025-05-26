@@ -14,7 +14,17 @@ jQuery(function($){
                  : $field.val();
 
     if ( val ) {
-      setVar(name, val);
+      // Handle font family initialization
+      if (name && name.includes('font-family')) {
+        if (val) {
+          loadGoogleFont(val);
+          setVar(name, "'" + val + "', sans-serif");
+        } else {
+          setVar(name, 'inherit');
+        }
+      } else {
+        setVar(name, val);
+      }
     }
   });
 
@@ -40,11 +50,49 @@ jQuery(function($){
     setVar(name, val);
   });
 
-  // when a select field changes (for font weight)
+  // when a select field changes (for font weight and font family)
   $('.lpfs-select-field').on('change', function(){
     var $f    = $(this),
         name  = $f.data('var'),
         val   = $f.val();
-    setVar(name, val);
+    
+    // Handle font family changes
+    if (name.includes('font-family')) {
+      if (val) {
+        // Load Google Font for preview
+        loadGoogleFont(val);
+        setVar(name, "'" + val + "', sans-serif");
+      } else {
+        setVar(name, 'inherit');
+      }
+    } else {
+      setVar(name, val);
+    }
   });
+
+  // Function to load Google Fonts dynamically for preview
+  function loadGoogleFont(fontName) {
+    if (!fontName) return;
+    
+    // Check if font is already loaded
+    var fontId = 'lpfs-font-' + fontName.replace(/\s+/g, '-').toLowerCase();
+    if ($('#' + fontId).length) return;
+    
+    // Create Google Fonts URL with proper format
+    var fontUrl = 'https://fonts.googleapis.com/css2?family=' + 
+                  fontName.replace(/\s+/g, '+') + ':wght@400;500;600;700&display=swap';
+    
+    // Add font link to head
+    $('<link>')
+      .attr('id', fontId)
+      .attr('rel', 'stylesheet')
+      .attr('href', fontUrl)
+      .appendTo('head');
+    
+    // Wait for font to load before applying
+    setTimeout(function() {
+      // Force a repaint to ensure font is applied
+      $('#lpfs-preview').hide().show(0);
+    }, 100);
+  }
 });

@@ -65,7 +65,7 @@ class LPFS_Admin
      */
     public function enqueue_assets(string $hook): void
     {
-        // Only load on our plugin’s admin page
+        // Only load on our plugin's admin page
         if ($hook !== 'toplevel_page_lpfs-styles') {
             return;
         }
@@ -75,6 +75,42 @@ class LPFS_Admin
         // Our custom CSS & JS
         wp_enqueue_style('lpfs-admin-style', LPFS_PLUGIN_URL . 'assets/css/admin.css');
         wp_enqueue_script('lpfs-admin-script', LPFS_PLUGIN_URL . 'assets/js/admin.js', ['jquery', 'wp-color-picker'], false, true);
+    }
+
+    /**
+     * Get list of popular Google Fonts
+     * 
+     * @return array Array of Google Fonts
+     */
+    private function get_google_fonts(): array
+    {
+        return [
+            '' => __('Default', 'landing-page-forms-styler'),
+            'Open Sans' => 'Open Sans',
+            'Roboto' => 'Roboto',
+            'Lato' => 'Lato',
+            'Montserrat' => 'Montserrat',
+            'Oswald' => 'Oswald',
+            'Source Sans Pro' => 'Source Sans Pro',
+            'Raleway' => 'Raleway',
+            'Poppins' => 'Poppins',
+            'Nunito' => 'Nunito',
+            'Ubuntu' => 'Ubuntu',
+            'Playfair Display' => 'Playfair Display',
+            'Merriweather' => 'Merriweather',
+            'PT Sans' => 'PT Sans',
+            'Roboto Condensed' => 'Roboto Condensed',
+            'Noto Sans' => 'Noto Sans',
+            'Fira Sans' => 'Fira Sans',
+            'Rubik' => 'Rubik',
+            'Work Sans' => 'Work Sans',
+            'Inter' => 'Inter',
+            'Crimson Text' => 'Crimson Text',
+            'Libre Baskerville' => 'Libre Baskerville',
+            'Roboto Slab' => 'Roboto Slab',
+            'Oxygen' => 'Oxygen',
+            'Titillium Web' => 'Titillium Web'
+        ];
     }
 
     /**
@@ -488,6 +524,60 @@ class LPFS_Admin
                                     <p class="description"><?php esc_html_e('Use values like 1.2, 1.5, etc. Leave empty for default.', 'landing-page-forms-styler'); ?></p>
                                 </td>
                             </tr>
+
+                            <!-- Input Font Family -->
+                            <tr>
+                                <th><?php esc_html_e('Input Font Family', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <select
+                                        class="lpfs-select-field"
+                                        data-var="input-font-family"
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_font_family]">
+                                        <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['input_font_family'] ?? '', $value); ?>>
+                                                <?php echo esc_html($label); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description"><?php esc_html_e('Select a Google Font for input fields, textareas, and select elements.', 'landing-page-forms-styler'); ?></p>
+                                </td>
+                            </tr>
+
+                            <!-- Label Font Family -->
+                            <tr>
+                                <th><?php esc_html_e('Label Font Family', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <select
+                                        class="lpfs-select-field"
+                                        data-var="label-font-family"
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_font_family]">
+                                        <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['label_font_family'] ?? '', $value); ?>>
+                                                <?php echo esc_html($label); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description"><?php esc_html_e('Select a Google Font for form labels.', 'landing-page-forms-styler'); ?></p>
+                                </td>
+                            </tr>
+
+                            <!-- Button Font Family -->
+                            <tr>
+                                <th><?php esc_html_e('Button Font Family', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <select
+                                        class="lpfs-select-field"
+                                        data-var="button-font-family"
+                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_family]">
+                                        <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['button_font_family'] ?? '', $value); ?>>
+                                                <?php echo esc_html($label); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description"><?php esc_html_e('Select a Google Font for buttons.', 'landing-page-forms-styler'); ?></p>
+                                </td>
+                            </tr>
                         </table>
 
                         <?php submit_button(); ?>
@@ -618,6 +708,16 @@ public function sanitize_presets($input)
         // Handle line height as decimal
         if (isset($raw['button_line_height']) && !empty($raw['button_line_height'])) {
             $s['button_line_height'] = floatval($raw['button_line_height']);
+        }
+
+        // Process font family fields
+        $font_fields = ['input_font_family', 'label_font_family', 'button_font_family'];
+        $allowed_fonts = array_keys($this->get_google_fonts());
+        
+        foreach ($font_fields as $field) {
+            if (isset($raw[$field]) && in_array($raw[$field], $allowed_fonts)) {
+                $s[$field] = sanitize_text_field($raw[$field]);
+            }
         }
 
         $clean[$idx] = [

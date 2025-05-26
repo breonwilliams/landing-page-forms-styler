@@ -11,7 +11,57 @@ class LPFS_Frontend {
     const OPTION_KEY = 'lp_forms_styles';
 
     public function __construct() {
+        add_action( 'wp_head', [ $this, 'load_google_fonts' ] );
         add_action( 'wp_head', [ $this, 'output_styles' ] );
+    }
+
+    /**
+     * Load Google Fonts used in presets
+     */
+    public function load_google_fonts() {
+        $presets = get_option( self::OPTION_KEY, [] );
+        if ( empty( $presets ) ) {
+            return;
+        }
+
+        $fonts_to_load = [];
+        
+        foreach ( $presets as $preset ) {
+            $settings = $preset['settings'] ?? [];
+            
+            // Collect all font families used
+            $font_fields = ['input_font_family', 'label_font_family', 'button_font_family'];
+            foreach ( $font_fields as $field ) {
+                if ( !empty( $settings[$field] ) ) {
+                    $font_name = $settings[$field];
+                    if ( !isset( $fonts_to_load[$font_name] ) ) {
+                        $fonts_to_load[$font_name] = [];
+                    }
+                    
+                    // Add font weights if button font
+                    if ( $field === 'button_font_family' && !empty( $settings['button_font_weight'] ) ) {
+                        $fonts_to_load[$font_name][] = $settings['button_font_weight'];
+                    } else {
+                        // Add common weights
+                        $fonts_to_load[$font_name] = array_merge( $fonts_to_load[$font_name], ['400', '500', '600', '700'] );
+                    }
+                }
+            }
+        }
+
+        if ( !empty( $fonts_to_load ) ) {
+            $font_families = [];
+            foreach ( $fonts_to_load as $font_name => $weights ) {
+                $weights = array_unique( $weights );
+                sort( $weights );
+                $font_families[] = str_replace( ' ', '+', $font_name ) . ':wght@' . implode( ';', $weights );
+            }
+            
+            $google_fonts_url = 'https://fonts.googleapis.com/css2?family=' . implode( '&family=', $font_families ) . '&display=swap';
+            echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
+            echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
+            echo '<link href="' . esc_url( $google_fonts_url ) . '" rel="stylesheet">' . "\n";
+        }
     }
 
     /**
@@ -92,6 +142,17 @@ class LPFS_Frontend {
             }
             if (isset($settings['button_line_height'])) {
                 echo ".{$class} button { line-height: {$settings['button_line_height']} !important; }\n";
+            }
+            
+            // Font family styles
+            if (isset($settings['input_font_family']) && !empty($settings['input_font_family'])) {
+                echo ".{$class} input, .{$class} textarea, .{$class} select { font-family: '{$settings['input_font_family']}', sans-serif !important; }\n";
+            }
+            if (isset($settings['label_font_family']) && !empty($settings['label_font_family'])) {
+                echo ".{$class} label { font-family: '{$settings['label_font_family']}', sans-serif !important; }\n";
+            }
+            if (isset($settings['button_font_family']) && !empty($settings['button_font_family'])) {
+                echo ".{$class} button { font-family: '{$settings['button_font_family']}', sans-serif !important; }\n";
             }
         }
 
