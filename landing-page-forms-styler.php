@@ -23,8 +23,11 @@ if ( ! defined( 'LPFS_PLUGIN_URL' ) ) {
 }
 
 // Include core classes
+require_once LPFS_PLUGIN_DIR . 'includes/class-constants.php';
+require_once LPFS_PLUGIN_DIR . 'includes/class-logger.php';
 require_once LPFS_PLUGIN_DIR . 'includes/class-admin.php';
 require_once LPFS_PLUGIN_DIR . 'includes/class-frontend.php';
+require_once LPFS_PLUGIN_DIR . 'includes/class-css-generator.php';
 
 /**
  * Initialize the plugin

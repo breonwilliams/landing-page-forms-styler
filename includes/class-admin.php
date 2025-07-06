@@ -9,7 +9,6 @@ if (! defined('ABSPATH')) {
  */
 class LPFS_Admin
 {
-    const OPTION_KEY = 'lp_forms_styles';
     // Default values used throughout the code
     const DEFAULT_PRESET = [
         'title' => '',
@@ -24,6 +23,8 @@ class LPFS_Admin
     {
         add_action('admin_menu',           [$this, 'register_admin_menu']);
         add_action('admin_init',           [$this, 'register_settings']);
+        add_action('admin_init',           [$this, 'handle_export']);
+        add_action('admin_init',           [$this, 'handle_import']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
         add_filter('redirect_post_location', [$this, 'maintain_edit_context']);
         add_action('admin_notices', [$this, 'display_admin_notices']);
@@ -35,13 +36,13 @@ class LPFS_Admin
     public function register_admin_menu(): void
     {
         add_menu_page(
-            __('Landing Page Forms', 'landing-page-forms-styler'),
-            __('Landing Page Forms', 'landing-page-forms-styler'),
-            'manage_options',
-            'lpfs-styles',
+            __('Landing Page Forms', LPFS_Constants::TEXT_DOMAIN),
+            __('Landing Page Forms', LPFS_Constants::TEXT_DOMAIN),
+            LPFS_Constants::MENU_CAPABILITY,
+            LPFS_Constants::MENU_SLUG,
             [$this, 'render_admin_page'],
             'dashicons-feedback',
-            60
+            LPFS_Constants::MENU_POSITION
         );
     }
 
@@ -52,10 +53,9 @@ class LPFS_Admin
     {
         register_setting(
             'lpfs_styles_group',
-            self::OPTION_KEY,
+            LPFS_Constants::OPTION_KEY,
             [
-                'sanitize_callback' => [$this, 'sanitize_presets'],
-                'pre_update_callback' => [$this, 'verify_nonce']
+                'sanitize_callback' => [$this, 'sanitize_and_validate_presets']
             ]
         );
     }
@@ -135,12 +135,94 @@ class LPFS_Admin
         }
 
         $idx = absint($_GET['delete']);
-        $presets = get_option(self::OPTION_KEY, []);
+        $presets = get_option(LPFS_Constants::OPTION_KEY, []);
 
         if (isset($presets[$idx])) {
+            $deleted_preset = $presets[$idx];
             unset($presets[$idx]);
-            update_option(self::OPTION_KEY, array_values($presets));
+            update_option(LPFS_Constants::OPTION_KEY, array_values($presets));
+            
+            LPFS_Logger::info('Style preset deleted', [
+                'title' => $deleted_preset['title'] ?? 'Unknown',
+                'class' => $deleted_preset['custom_class'] ?? 'Unknown'
+            ]);
+            
+            // Clear the styles cache when presets are deleted
+            delete_transient(LPFS_Constants::STYLES_CACHE_KEY);
+            delete_transient(LPFS_Constants::FONTS_CACHE_KEY);
+            // Regenerate CSS file
+            $css_generator = new LPFS_CSS_Generator();
+            $css_generator->generate_css_file();
             wp_redirect(add_query_arg('deleted', '1', admin_url('admin.php?page=lpfs-styles')));
+            exit;
+        }
+    }
+
+    /**
+     * Handle preset duplication
+     * 
+     * @return void
+     */
+    private function handle_preset_duplication(): void
+    {
+        if (!isset($_GET['duplicate'])) {
+            return;
+        }
+
+        // Verify user has proper permissions
+        if (!current_user_can(LPFS_Constants::MENU_CAPABILITY)) {
+            wp_die(__('You do not have sufficient permissions to access this page.', LPFS_Constants::TEXT_DOMAIN));
+        }
+
+        // Verify nonce
+        if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'duplicate_preset')) {
+            wp_die(__('Security check failed.', LPFS_Constants::TEXT_DOMAIN));
+        }
+
+        $idx = absint($_GET['duplicate']);
+        $presets = get_option(LPFS_Constants::OPTION_KEY, []);
+
+        if (isset($presets[$idx])) {
+            $original = $presets[$idx];
+            
+            // Create duplicate with modified title and class
+            $duplicate = $original;
+            $duplicate['title'] = $original['title'] . ' - Copy';
+            
+            // Generate unique class name
+            $base_class = $original['custom_class'] . '-copy';
+            $class = $base_class;
+            $counter = 1;
+            
+            // Check for existing classes
+            $existing_classes = array_column($presets, 'custom_class');
+            while (in_array($class, $existing_classes)) {
+                $class = $base_class . '-' . $counter;
+                $counter++;
+            }
+            
+            $duplicate['custom_class'] = $class;
+            
+            // Add to presets
+            $presets[] = $duplicate;
+            update_option(LPFS_Constants::OPTION_KEY, $presets);
+            
+            LPFS_Logger::info('Style preset duplicated', [
+                'original_title' => $original['title'],
+                'original_class' => $original['custom_class'],
+                'duplicate_title' => $duplicate['title'],
+                'duplicate_class' => $duplicate['custom_class']
+            ]);
+            
+            // Clear caches and regenerate CSS
+            delete_transient(LPFS_Constants::STYLES_CACHE_KEY);
+            delete_transient(LPFS_Constants::FONTS_CACHE_KEY);
+            $css_generator = new LPFS_CSS_Generator();
+            $css_generator->generate_css_file();
+            
+            // Redirect to edit the duplicate
+            $new_index = count($presets) - 1;
+            wp_redirect(add_query_arg(['preset' => $new_index, 'duplicated' => '1'], admin_url('admin.php?page=lpfs-styles')));
             exit;
         }
     }
@@ -152,9 +234,12 @@ class LPFS_Admin
     {
         // Handle deletion
         $this->handle_preset_deletion();
+        
+        // Handle duplication
+        $this->handle_preset_duplication();
 
         // Load existing presets
-        $presets = get_option(self::OPTION_KEY, []);
+        $presets = get_option(LPFS_Constants::OPTION_KEY, []);
         $edit_index = isset($_GET['preset']) ? absint($_GET['preset']) : null;
         $current = (isset($edit_index, $presets[$edit_index]))
             ? $presets[$edit_index]
@@ -163,14 +248,29 @@ class LPFS_Admin
         <div class="wrap">
             <h1><?php esc_html_e('Landing Page Form Styles', 'landing-page-forms-styler'); ?></h1>
 
+            <!-- Import/Export Actions -->
+            <div style="margin-bottom: 20px;">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=lpfs-styles&action=export')); ?>" class="button">
+                    <?php esc_html_e('Export All Styles', LPFS_Constants::TEXT_DOMAIN); ?>
+                </a>
+                <button type="button" class="button" onclick="document.getElementById('lpfs-import-file').click();">
+                    <?php esc_html_e('Import Styles', LPFS_Constants::TEXT_DOMAIN); ?>
+                </button>
+                <form id="lpfs-import-form" method="post" enctype="multipart/form-data" style="display: none;">
+                    <?php wp_nonce_field('lpfs_import_styles', 'lpfs_import_nonce'); ?>
+                    <input type="file" id="lpfs-import-file" name="lpfs_import_file" accept=".json" onchange="if(confirm('<?php esc_attr_e('Are you sure you want to import? This will merge with existing styles.', LPFS_Constants::TEXT_DOMAIN); ?>')) { document.getElementById('lpfs-import-form').submit(); }">
+                </form>
+            </div>
+
             <!-- 1. Presets List -->
-            <h2><?php esc_html_e('All Styles', 'landing-page-forms-styler'); ?></h2>
+            <h2><?php esc_html_e('All Styles', LPFS_Constants::TEXT_DOMAIN); ?></h2>
             <table class="widefat fixed striped">
                 <thead>
                     <tr>
-                        <th><?php esc_html_e('Title', 'landing-page-forms-styler'); ?></th>
-                        <th><?php esc_html_e('CSS Class', 'landing-page-forms-styler'); ?></th>
-                        <th><?php esc_html_e('Actions', 'landing-page-forms-styler'); ?></th>
+                        <th><?php esc_html_e('Title', LPFS_Constants::TEXT_DOMAIN); ?></th>
+                        <th><?php esc_html_e('CSS Class', LPFS_Constants::TEXT_DOMAIN); ?></th>
+                        <th><?php esc_html_e('Preview', LPFS_Constants::TEXT_DOMAIN); ?></th>
+                        <th><?php esc_html_e('Actions', LPFS_Constants::TEXT_DOMAIN); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -179,19 +279,25 @@ class LPFS_Admin
                                 <td><?php echo esc_html($p['title']); ?></td>
                                 <td><code><?php echo esc_html($p['custom_class']); ?></code></td>
                                 <td>
+                                    <?php $this->render_preset_preview($p); ?>
+                                </td>
+                                <td>
                                     <a href="<?php echo esc_url(admin_url('admin.php?page=lpfs-styles&preset=' . $i)); ?>">
-                                        <?php esc_html_e('Edit', 'landing-page-forms-styler'); ?>
+                                        <?php esc_html_e('Edit', LPFS_Constants::TEXT_DOMAIN); ?>
+                                    </a> |
+                                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=lpfs-styles&duplicate=' . $i), 'duplicate_preset'); ?>">
+                                        <?php esc_html_e('Duplicate', LPFS_Constants::TEXT_DOMAIN); ?>
                                     </a> |
                                     <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=lpfs-styles&delete=' . $i), 'delete_preset'); ?>"
-                                        onclick="return confirm('<?php esc_attr_e('Delete this style?', 'landing-page-forms-styler'); ?>');">
-                                        <?php esc_html_e('Delete', 'landing-page-forms-styler'); ?>
+                                        onclick="return confirm('<?php esc_attr_e('Delete this style?', LPFS_Constants::TEXT_DOMAIN); ?>');">
+                                        <?php esc_html_e('Delete', LPFS_Constants::TEXT_DOMAIN); ?>
                                     </a>
                                 </td>
                             </tr>
                         <?php endforeach;
                     else: ?>
                         <tr>
-                            <td colspan="3"><?php esc_html_e('No styles yet.', 'landing-page-forms-styler'); ?></td>
+                            <td colspan="4"><?php esc_html_e('No styles yet.', LPFS_Constants::TEXT_DOMAIN); ?></td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -220,7 +326,7 @@ class LPFS_Admin
 
                         <?php $index = isset($edit_index) ? $edit_index : count($presets); ?>
                         <input type="hidden" name="lpfs_edit_index" value="<?php echo esc_attr($index); ?>">
-                        <input type="hidden" name="<?php echo esc_attr(self::OPTION_KEY); ?>[<?php echo $index; ?>]" value="1">
+                        <input type="hidden" name="<?php echo esc_attr(LPFS_Constants::OPTION_KEY); ?>[<?php echo $index; ?>]" value="1">
 
                         <?php
                         // Preserve all other existing presets so they don't get wiped out
@@ -233,10 +339,10 @@ class LPFS_Admin
                                 // Title & Class
                         ?>
                                 <input type="hidden"
-                                    name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][title]"
+                                    name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $i; ?>][title]"
                                     value="<?php echo esc_attr($p['title']); ?>">
                                 <input type="hidden"
-                                    name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][custom_class]"
+                                    name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $i; ?>][custom_class]"
                                     value="<?php echo esc_attr($p['custom_class']); ?>">
                                 <?php
                                 // All settings
@@ -244,7 +350,7 @@ class LPFS_Admin
                                     foreach ($p['settings'] as $key => $val) {
                                 ?>
                                         <input type="hidden"
-                                            name="<?php echo self::OPTION_KEY; ?>[<?php echo $i; ?>][settings][<?php echo $key; ?>]"
+                                            name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $i; ?>][settings][<?php echo $key; ?>]"
                                             value="<?php echo esc_attr($val); ?>">
                         <?php
                                     }
@@ -264,7 +370,7 @@ class LPFS_Admin
                                         type="text"
                                         id="lpfs-title"
                                         class="regular-text"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][title]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][title]"
                                         value="<?php echo esc_attr($current['title']); ?>">
                                 </td>
                             </tr>
@@ -278,7 +384,7 @@ class LPFS_Admin
                                         type="text"
                                         id="lpfs-class"
                                         class="regular-text"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][custom_class]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][custom_class]"
                                         value="<?php echo esc_attr($current['custom_class']); ?>">
                                 </td>
                             </tr>
@@ -293,7 +399,7 @@ class LPFS_Admin
                                         class="lpfs-number-field"
                                         data-var="input-border-radius"
                                         data-unit="px"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_radius]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_radius]"
                                         value="<?php echo esc_attr($current['settings']['input_border_radius'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -308,7 +414,7 @@ class LPFS_Admin
                                         class="lpfs-number-field"
                                         data-var="input-border-width"
                                         data-unit="px"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_width]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_width]"
                                         value="<?php echo esc_attr($current['settings']['input_border_width'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -321,7 +427,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="input-border-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_border_color]"
                                         value="<?php echo esc_attr($current['settings']['input_border_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -334,7 +440,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="input-text-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_text_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_text_color]"
                                         value="<?php echo esc_attr($current['settings']['input_text_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -347,7 +453,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="input-bg-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_bg_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_bg_color]"
                                         value="<?php echo esc_attr($current['settings']['input_bg_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -360,7 +466,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="input-focus-border-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_focus_border_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_focus_border_color]"
                                         value="<?php echo esc_attr($current['settings']['input_focus_border_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -373,7 +479,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="label-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_color]"
                                         value="<?php echo esc_attr($current['settings']['label_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -388,7 +494,7 @@ class LPFS_Admin
                                         class="lpfs-number-field"
                                         data-var="button-border-radius"
                                         data-unit="px"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_radius]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_radius]"
                                         value="<?php echo esc_attr($current['settings']['button_border_radius'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -401,7 +507,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="button-border-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_color]"
                                         value="<?php echo esc_attr($current['settings']['button_border_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -414,7 +520,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="button-bg-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_bg_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_bg_color]"
                                         value="<?php echo esc_attr($current['settings']['button_bg_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -427,7 +533,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="button-text-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_text_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_text_color]"
                                         value="<?php echo esc_attr($current['settings']['button_text_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -440,7 +546,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="button-hover-bg-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_bg_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_bg_color]"
                                         value="<?php echo esc_attr($current['settings']['button_hover_bg_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -453,7 +559,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="button-hover-text-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_text_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_text_color]"
                                         value="<?php echo esc_attr($current['settings']['button_hover_text_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -466,7 +572,7 @@ class LPFS_Admin
                                         type="text"
                                         class="lpfs-color-field"
                                         data-var="button-hover-border-color"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_border_color]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_hover_border_color]"
                                         value="<?php echo esc_attr($current['settings']['button_hover_border_color'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -481,7 +587,7 @@ class LPFS_Admin
                                         class="lpfs-number-field"
                                         data-var="button-font-size"
                                         data-unit="px"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_size]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_size]"
                                         value="<?php echo esc_attr($current['settings']['button_font_size'] ?? ''); ?>">
                                 </td>
                             </tr>
@@ -493,7 +599,7 @@ class LPFS_Admin
                                     <select
                                         class="lpfs-select-field"
                                         data-var="button-font-weight"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_weight]">
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_weight]">
                                         <option value=""><?php esc_html_e('Default', 'landing-page-forms-styler'); ?></option>
                                         <option value="100" <?php selected($current['settings']['button_font_weight'] ?? '', '100'); ?>>100 (Thin)</option>
                                         <option value="200" <?php selected($current['settings']['button_font_weight'] ?? '', '200'); ?>>200 (Extra Light)</option>
@@ -519,7 +625,7 @@ class LPFS_Admin
                                         class="lpfs-number-field"
                                         data-var="button-line-height"
                                         data-unit=""
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_line_height]"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_line_height]"
                                         value="<?php echo esc_attr($current['settings']['button_line_height'] ?? ''); ?>">
                                     <p class="description"><?php esc_html_e('Use values like 1.2, 1.5, etc. Leave empty for default.', 'landing-page-forms-styler'); ?></p>
                                 </td>
@@ -532,7 +638,7 @@ class LPFS_Admin
                                     <select
                                         class="lpfs-select-field"
                                         data-var="input-font-family"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_font_family]">
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_font_family]">
                                         <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
                                             <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['input_font_family'] ?? '', $value); ?>>
                                                 <?php echo esc_html($label); ?>
@@ -550,7 +656,7 @@ class LPFS_Admin
                                     <select
                                         class="lpfs-select-field"
                                         data-var="label-font-family"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_font_family]">
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_font_family]">
                                         <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
                                             <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['label_font_family'] ?? '', $value); ?>>
                                                 <?php echo esc_html($label); ?>
@@ -568,7 +674,7 @@ class LPFS_Admin
                                     <select
                                         class="lpfs-select-field"
                                         data-var="button-font-family"
-                                        name="<?php echo self::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_family]">
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_font_family]">
                                         <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
                                             <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['button_font_family'] ?? '', $value); ?>>
                                                 <?php echo esc_html($label); ?>
@@ -630,6 +736,23 @@ class LPFS_Admin
     }
 
 /**
+ * Sanitize and validate the presets array with security checks
+ * 
+ * @param array $input The input array to sanitize
+ * @return array The sanitized array
+ */
+public function sanitize_and_validate_presets($input)
+{
+    // First verify permissions and nonce
+    $verified_input = $this->verify_nonce($input);
+    if ($verified_input !== $input) {
+        return $verified_input; // Return early if verification failed
+    }
+    
+    return $this->sanitize_presets($input);
+}
+
+/**
  * Sanitize the presets array
  * 
  * @param array $input The input array to sanitize
@@ -666,7 +789,7 @@ public function sanitize_presets($input)
     // Check if we're adding or updating
     $is_update = false;
     $edit_index = isset($_POST['lpfs_edit_index']) ? absint($_POST['lpfs_edit_index']) : null;
-    $existing = get_option(self::OPTION_KEY, []);
+    $existing = get_option(LPFS_Constants::OPTION_KEY, []);
     if ($edit_index !== null && isset($existing[$edit_index])) {
         $is_update = true;
     }
@@ -683,17 +806,38 @@ public function sanitize_presets($input)
         $raw = is_array($preset['settings']) ? $preset['settings'] : [];
         $s = [];
 
-        // Process numeric fields
+        // Process numeric fields with stricter validation
         foreach ($numeric_fields as $field) {
-            if (isset($raw[$field])) {
-                $s[$field] = absint($raw[$field]);
+            if (isset($raw[$field]) && is_numeric($raw[$field])) {
+                $value = intval($raw[$field]);
+                // Set reasonable limits for each field
+                switch ($field) {
+                    case 'input_border_radius':
+                    case 'button_border_radius':
+                        // Border radius
+                        $s[$field] = max(LPFS_Constants::BORDER_RADIUS_MIN, min(LPFS_Constants::BORDER_RADIUS_MAX, $value));
+                        break;
+                    case 'input_border_width':
+                        // Border width
+                        $s[$field] = max(LPFS_Constants::BORDER_WIDTH_MIN, min(LPFS_Constants::BORDER_WIDTH_MAX, $value));
+                        break;
+                    case 'button_font_size':
+                        // Font size
+                        $s[$field] = max(LPFS_Constants::FONT_SIZE_MIN, min(LPFS_Constants::FONT_SIZE_MAX, $value));
+                        break;
+                    default:
+                        $s[$field] = max(0, $value);
+                }
             }
         }
 
-        // Process color fields
+        // Process color fields with enhanced validation
         foreach ($color_fields as $field) {
-            if (isset($raw[$field])) {
-                $s[$field] = sanitize_hex_color($raw[$field]);
+            if (isset($raw[$field]) && !empty($raw[$field])) {
+                $color = $this->sanitize_color_value($raw[$field]);
+                if ($color !== false) {
+                    $s[$field] = $color;
+                }
             }
         }
 
@@ -705,9 +849,13 @@ public function sanitize_presets($input)
             }
         }
 
-        // Handle line height as decimal
-        if (isset($raw['button_line_height']) && !empty($raw['button_line_height'])) {
-            $s['button_line_height'] = floatval($raw['button_line_height']);
+        // Handle line height as decimal with validation
+        if (isset($raw['button_line_height']) && is_numeric($raw['button_line_height'])) {
+            $line_height = floatval($raw['button_line_height']);
+            // Line height validation
+            if ($line_height >= LPFS_Constants::LINE_HEIGHT_MIN && $line_height <= LPFS_Constants::LINE_HEIGHT_MAX) {
+                $s['button_line_height'] = $line_height;
+            }
         }
 
         // Process font family fields
@@ -727,8 +875,13 @@ public function sanitize_presets($input)
         ];
     }
 
-    // Add success message
+    // Add success message and log
     if ($is_update) {
+        LPFS_Logger::info('Style preset updated', [
+            'preset_index' => $edit_index,
+            'title' => $title ?? 'Unknown',
+            'class' => $custom_class ?? 'Unknown'
+        ]);
         add_settings_error(
             'lpfs_settings',
             'style_updated',
@@ -736,6 +889,10 @@ public function sanitize_presets($input)
             'success'
         );
     } else {
+        LPFS_Logger::info('New style preset added', [
+            'title' => $title ?? 'Unknown',
+            'class' => $custom_class ?? 'Unknown'
+        ]);
         add_settings_error(
             'lpfs_settings',
             'style_added',
@@ -743,6 +900,14 @@ public function sanitize_presets($input)
             'success'
         );
     }
+
+    // Clear the styles cache when presets are updated
+    delete_transient(LPFS_Constants::STYLES_CACHE_KEY);
+    delete_transient(LPFS_Constants::FONTS_CACHE_KEY);
+    
+    // Generate static CSS file
+    $css_generator = new LPFS_CSS_Generator();
+    $css_generator->generate_css_file();
 
     // Re-index to 0,1,2… so new entries append properly
     return array_values($clean);
@@ -779,16 +944,31 @@ public function sanitize_presets($input)
      */
     public function verify_nonce($input)
     {
+        // Verify user has proper permissions
+        if (!current_user_can('manage_options')) {
+            add_settings_error(
+                'lpfs_settings',
+                'permission_error',
+                __('You do not have sufficient permissions to perform this action.', 'landing-page-forms-styler'),
+                'error'
+            );
+            return get_option(LPFS_Constants::OPTION_KEY, []);
+        }
+
         // Verify the nonce
         if (!isset($_POST['lpfs_nonce']) || !wp_verify_nonce($_POST['lpfs_nonce'], 'lpfs_save_preset')) {
             // Nonce verification failed
+            LPFS_Logger::warning('Nonce verification failed for preset save', [
+                'user_id' => get_current_user_id(),
+                'nonce_provided' => isset($_POST['lpfs_nonce'])
+            ]);
             add_settings_error(
                 'lpfs_settings',
                 'nonce_error',
                 __('Security check failed. Please try again.', 'landing-page-forms-styler'),
                 'error'
             );
-            return get_option(self::OPTION_KEY, []);
+            return get_option(LPFS_Constants::OPTION_KEY, []);
         }
 
         return $input;
@@ -809,12 +989,305 @@ public function sanitize_presets($input)
         if (isset($_GET['deleted']) && $_GET['deleted'] == '1') {
         ?>
             <div class="notice notice-success is-dismissible">
-                <p><?php esc_html_e('Style deleted successfully.', 'landing-page-forms-styler'); ?></p>
+                <p><?php esc_html_e('Style deleted successfully.', LPFS_Constants::TEXT_DOMAIN); ?></p>
+            </div>
+        <?php
+        }
+        
+        // Display duplication success message
+        if (isset($_GET['duplicated']) && $_GET['duplicated'] == '1') {
+        ?>
+            <div class="notice notice-success is-dismissible">
+                <p><?php esc_html_e('Style duplicated successfully. You are now editing the duplicate.', LPFS_Constants::TEXT_DOMAIN); ?></p>
             </div>
         <?php
         }
 
         // Display settings errors (including any from our nonce verification)
         settings_errors('lpfs_settings');
+    }
+
+    /**
+     * Sanitize color values (supports hex, rgb, rgba)
+     * 
+     * @param string $color The color value to sanitize
+     * @return string|false The sanitized color or false if invalid
+     */
+    private function sanitize_color_value($color) {
+        $color = trim($color);
+        
+        // Check for hex color (3 or 6 digits)
+        if (preg_match('/^#([A-Fa-f0-9]{3}){1,2}$/', $color)) {
+            return $color;
+        }
+        
+        // Check for rgb/rgba
+        if (preg_match('/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([01]?\.?\d*))?\s*\)$/i', $color, $matches)) {
+            $r = intval($matches[1]);
+            $g = intval($matches[2]);
+            $b = intval($matches[3]);
+            
+            // Validate RGB values
+            if ($r > 255 || $g > 255 || $b > 255) {
+                return false;
+            }
+            
+            if (isset($matches[4]) && $matches[4] !== '') {
+                // RGBA
+                $a = floatval($matches[4]);
+                if ($a < 0 || $a > 1) {
+                    return false;
+                }
+                return "rgba($r, $g, $b, $a)";
+            } else {
+                // RGB
+                return "rgb($r, $g, $b)";
+            }
+        }
+        
+        // Check for color keywords
+        $valid_keywords = ['transparent', 'inherit', 'initial', 'unset', 'currentcolor'];
+        if (in_array(strtolower($color), $valid_keywords)) {
+            return strtolower($color);
+        }
+        
+        return false;
+    }
+
+    /**
+     * Handle export of styles
+     */
+    public function handle_export() {
+        // Check if export action is requested
+        if (!isset($_GET['page']) || $_GET['page'] !== LPFS_Constants::MENU_SLUG) {
+            return;
+        }
+        
+        if (!isset($_GET['action']) || $_GET['action'] !== 'export') {
+            return;
+        }
+        
+        // Verify user permissions
+        if (!current_user_can(LPFS_Constants::MENU_CAPABILITY)) {
+            wp_die(__('You do not have sufficient permissions to export styles.', LPFS_Constants::TEXT_DOMAIN));
+        }
+        
+        // Get all presets
+        $presets = get_option(LPFS_Constants::OPTION_KEY, []);
+        
+        // Prepare export data
+        $export_data = [
+            'plugin' => 'landing-page-forms-styler',
+            'version' => LPFS_Constants::PLUGIN_VERSION,
+            'exported_at' => current_time('mysql'),
+            'site_url' => get_site_url(),
+            'presets' => $presets
+        ];
+        
+        // Set headers for download
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="lpfs-styles-export-' . date('Y-m-d-His') . '.json"');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Output JSON
+        echo wp_json_encode($export_data, JSON_PRETTY_PRINT);
+        
+        // Log export
+        LPFS_Logger::info('Styles exported', [
+            'preset_count' => count($presets)
+        ]);
+        
+        exit;
+    }
+
+    /**
+     * Handle import of styles
+     */
+    public function handle_import() {
+        // Check if import is being submitted
+        if (!isset($_FILES['lpfs_import_file'])) {
+            return;
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['lpfs_import_nonce']) || !wp_verify_nonce($_POST['lpfs_import_nonce'], 'lpfs_import_styles')) {
+            add_settings_error(
+                'lpfs_settings',
+                'import_nonce_error',
+                __('Security check failed. Please try again.', LPFS_Constants::TEXT_DOMAIN),
+                'error'
+            );
+            return;
+        }
+        
+        // Verify user permissions
+        if (!current_user_can(LPFS_Constants::MENU_CAPABILITY)) {
+            wp_die(__('You do not have sufficient permissions to import styles.', LPFS_Constants::TEXT_DOMAIN));
+        }
+        
+        $file = $_FILES['lpfs_import_file'];
+        
+        // Check for upload errors
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            add_settings_error(
+                'lpfs_settings',
+                'import_upload_error',
+                __('File upload failed. Please try again.', LPFS_Constants::TEXT_DOMAIN),
+                'error'
+            );
+            return;
+        }
+        
+        // Validate file type
+        if ($file['type'] !== 'application/json' && !preg_match('/\.json$/i', $file['name'])) {
+            add_settings_error(
+                'lpfs_settings',
+                'import_file_type',
+                __('Please upload a valid JSON file.', LPFS_Constants::TEXT_DOMAIN),
+                'error'
+            );
+            return;
+        }
+        
+        // Read file contents
+        $json_data = file_get_contents($file['tmp_name']);
+        $import_data = json_decode($json_data, true);
+        
+        // Validate JSON
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            add_settings_error(
+                'lpfs_settings',
+                'import_json_error',
+                __('Invalid JSON file. Please check the file and try again.', LPFS_Constants::TEXT_DOMAIN),
+                'error'
+            );
+            return;
+        }
+        
+        // Validate structure
+        if (!isset($import_data['plugin']) || $import_data['plugin'] !== 'landing-page-forms-styler') {
+            add_settings_error(
+                'lpfs_settings',
+                'import_invalid_file',
+                __('This does not appear to be a valid Landing Page Forms Styler export file.', LPFS_Constants::TEXT_DOMAIN),
+                'error'
+            );
+            return;
+        }
+        
+        if (!isset($import_data['presets']) || !is_array($import_data['presets'])) {
+            add_settings_error(
+                'lpfs_settings',
+                'import_no_presets',
+                __('No valid presets found in the import file.', LPFS_Constants::TEXT_DOMAIN),
+                'error'
+            );
+            return;
+        }
+        
+        // Get existing presets
+        $existing_presets = get_option(LPFS_Constants::OPTION_KEY, []);
+        $imported_count = 0;
+        $updated_count = 0;
+        
+        // Process imported presets
+        foreach ($import_data['presets'] as $preset) {
+            if (!isset($preset['title']) || !isset($preset['custom_class'])) {
+                continue;
+            }
+            
+            // Check if preset with same class already exists
+            $exists = false;
+            foreach ($existing_presets as $key => $existing) {
+                if ($existing['custom_class'] === $preset['custom_class']) {
+                    $existing_presets[$key] = $preset;
+                    $updated_count++;
+                    $exists = true;
+                    break;
+                }
+            }
+            
+            if (!$exists) {
+                $existing_presets[] = $preset;
+                $imported_count++;
+            }
+        }
+        
+        // Save merged presets
+        update_option(LPFS_Constants::OPTION_KEY, $existing_presets);
+        
+        // Clear caches and regenerate CSS
+        delete_transient(LPFS_Constants::STYLES_CACHE_KEY);
+        delete_transient(LPFS_Constants::FONTS_CACHE_KEY);
+        $css_generator = new LPFS_CSS_Generator();
+        $css_generator->generate_css_file();
+        
+        // Log import
+        LPFS_Logger::info('Styles imported', [
+            'imported' => $imported_count,
+            'updated' => $updated_count,
+            'total' => count($existing_presets)
+        ]);
+        
+        // Add success message
+        $message = sprintf(
+            __('Import successful! %d new styles imported, %d existing styles updated.', LPFS_Constants::TEXT_DOMAIN),
+            $imported_count,
+            $updated_count
+        );
+        add_settings_error(
+            'lpfs_settings',
+            'import_success',
+            $message,
+            'success'
+        );
+    }
+
+    /**
+     * Render a mini preview of the preset styles
+     * 
+     * @param array $preset The preset to preview
+     */
+    private function render_preset_preview($preset) {
+        $settings = $preset['settings'] ?? [];
+        
+        // Create a preview with visual indicators
+        $styles = [];
+        
+        // Button styles
+        $button_styles = [];
+        if (!empty($settings['button_bg_color'])) {
+            $button_styles[] = 'background-color: ' . $settings['button_bg_color'];
+        }
+        if (!empty($settings['button_text_color'])) {
+            $button_styles[] = 'color: ' . $settings['button_text_color'];
+        }
+        if (!empty($settings['button_border_radius'])) {
+            $button_styles[] = 'border-radius: ' . $settings['button_border_radius'] . 'px';
+        }
+        
+        // Input styles
+        $input_styles = [];
+        if (!empty($settings['input_border_color'])) {
+            $input_styles[] = 'border-color: ' . $settings['input_border_color'];
+        }
+        if (!empty($settings['input_border_radius'])) {
+            $input_styles[] = 'border-radius: ' . $settings['input_border_radius'] . 'px';
+        }
+        if (!empty($settings['input_border_width'])) {
+            $input_styles[] = 'border-width: ' . $settings['input_border_width'] . 'px';
+        }
+        
+        ?>
+        <div class="lpfs-preset-preview" style="display: inline-flex; gap: 10px; align-items: center;">
+            <div style="<?php echo esc_attr(implode('; ', $input_styles)); ?>; border-style: solid; width: 60px; height: 20px; background: #fff;"></div>
+            <div style="<?php echo esc_attr(implode('; ', $button_styles)); ?>; padding: 3px 10px; font-size: 11px;">Button</div>
+            <?php if (!empty($settings['label_color'])) : ?>
+                <div style="width: 16px; height: 16px; background-color: <?php echo esc_attr($settings['label_color']); ?>; border: 1px solid #ccc; border-radius: 2px;" title="<?php esc_attr_e('Label Color', LPFS_Constants::TEXT_DOMAIN); ?>"></div>
+            <?php endif; ?>
+        </div>
+        <?php
     }
 }
