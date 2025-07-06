@@ -44,3 +44,21 @@ function lpfs_init_plugin() {
     }
 }
 add_action( 'plugins_loaded', 'lpfs_init_plugin' );
+
+/**
+ * Plugin activation hook
+ * Regenerate CSS file on activation
+ */
+function lpfs_activate_plugin() {
+    // Clear any cached styles
+    delete_transient( LPFS_Constants::STYLES_CACHE_KEY );
+    delete_transient( LPFS_Constants::FONTS_CACHE_KEY );
+    
+    // Generate CSS file if presets exist
+    $presets = get_option( LPFS_Constants::OPTION_KEY, [] );
+    if ( ! empty( $presets ) ) {
+        $css_generator = new LPFS_CSS_Generator();
+        $css_generator->generate_css_file();
+    }
+}
+register_activation_hook( __FILE__, 'lpfs_activate_plugin' );

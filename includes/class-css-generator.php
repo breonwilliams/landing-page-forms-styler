@@ -108,6 +108,9 @@ class LPFS_CSS_Generator {
             if (isset($settings['button_border_color'])) {
                 $css .= ".{$class} button { border-color: {$settings['button_border_color']} !important; }\n";
             }
+            if (isset($settings['button_border_width'])) {
+                $css .= ".{$class} button { border-width: {$settings['button_border_width']}px !important; }\n";
+            }
             if (isset($settings['button_text_color'])) {
                 $css .= ".{$class} button { color: {$settings['button_text_color']} !important; }\n";
             }
@@ -210,10 +213,12 @@ class LPFS_CSS_Generator {
             'size' => strlen( $css_content )
         ] );
         
-        // Store file info in option
+        // Store file info in option with microtime for more unique versioning
+        $version = time() . '.' . rand(1000, 9999);
         update_option( LPFS_Constants::CSS_FILE_KEY, [
             'url' => $css_url,
-            'version' => time()
+            'version' => $version,
+            'generated' => current_time('mysql')
         ] );
         
         return $css_url;

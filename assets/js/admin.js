@@ -154,4 +154,78 @@ jQuery(function($){
 
   // Initialize sections when document is ready
   initCollapsibleSections();
+
+  // ===== Template Selection Functionality =====
+  
+  // Initialize template selection
+  function initTemplateSelection() {
+    var selectedTemplate = null;
+    
+    // Handle template card clicks
+    $('.lpfs-template-card').on('click', function() {
+      // Remove previous selection
+      $('.lpfs-template-card').removeClass('selected');
+      
+      // Add selection to clicked card
+      $(this).addClass('selected');
+      
+      // Store selected template
+      selectedTemplate = $(this).data('template');
+    });
+    
+    // Handle apply template button
+    $('#lpfs-apply-template').on('click', function() {
+      if (!selectedTemplate) {
+        alert('Please select a template first');
+        return;
+      }
+      
+      // Get template settings from data attributes
+      var $selectedCard = $('.lpfs-template-card[data-template="' + selectedTemplate + '"]');
+      var templateSettings = $selectedCard.data('settings');
+      
+      if (templateSettings) {
+        applyTemplateSettings(templateSettings);
+      }
+    });
+  }
+  
+  // Apply template settings to form fields
+  function applyTemplateSettings(settings) {
+    // Apply each setting
+    $.each(settings, function(key, value) {
+      var $field = $('[name$="[settings][' + key + ']"]');
+      
+      if ($field.length) {
+        // Handle color fields
+        if ($field.hasClass('lpfs-color-field')) {
+          $field.val(value).trigger('change');
+          // Update color picker
+          $field.wpColorPicker('color', value);
+        }
+        // Handle select fields
+        else if ($field.is('select')) {
+          $field.val(value).trigger('change');
+        }
+        // Handle number and text fields
+        else {
+          $field.val(value).trigger('input');
+        }
+      }
+    });
+    
+    // Show success message
+    var $notice = $('<div class="notice notice-success is-dismissible"><p>Template applied successfully!</p></div>');
+    $('.lpfs-templates-section').before($notice);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(function() {
+      $notice.fadeOut(function() {
+        $(this).remove();
+      });
+    }, 3000);
+  }
+  
+  // Initialize on document ready
+  initTemplateSelection();
 });

@@ -137,13 +137,19 @@ class LPFS_Frontend {
         $css_file = get_option( LPFS_Constants::CSS_FILE_KEY );
         
         if ( $css_file && isset( $css_file['url'], $css_file['version'] ) ) {
+            // Add query string to URL to force cache bypass
+            $css_url = add_query_arg( 'ver', $css_file['version'], $css_file['url'] );
+            
             // Enqueue static CSS file
             wp_enqueue_style( 
                 'lpfs-form-styles', 
-                $css_file['url'], 
+                $css_url, 
                 [], 
-                $css_file['version'] 
+                null // Set to null since we're using query string
             );
+            
+            // Also output inline styles as immediate fallback
+            add_action( 'wp_head', [ $this, 'output_styles' ], 100 );
         } else {
             // Fall back to inline styles
             add_action( 'wp_head', [ $this, 'output_styles' ] );
@@ -218,6 +224,9 @@ class LPFS_Frontend {
             }
             if (isset($settings['button_border_color'])) {
                 echo ".{$class} button { border-color: {$settings['button_border_color']} !important; }\n";
+            }
+            if (isset($settings['button_border_width'])) {
+                echo ".{$class} button { border-width: {$settings['button_border_width']}px !important; }\n";
             }
             if (isset($settings['button_text_color'])) {
                 echo ".{$class} button { color: {$settings['button_text_color']} !important; }\n";

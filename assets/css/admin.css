@@ -275,3 +275,122 @@
     padding-top: 10px; /* Golden ratio sm spacing */
     padding-bottom: 10px;
 }
+
+/* ===== Template Selection Styles ===== */
+.lpfs-templates-section {
+    margin-bottom: 42px; /* Golden ratio lg spacing */
+    padding: 26px; /* Golden ratio md spacing */
+    background: #f0f0f1;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+}
+
+.lpfs-templates-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px; /* Golden ratio base spacing */
+}
+
+.lpfs-templates-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: #1d2327;
+}
+
+.lpfs-templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px; /* Golden ratio base spacing */
+}
+
+.lpfs-template-card {
+    background: #fff;
+    border: 2px solid #dcdcde;
+    border-radius: 8px;
+    padding: 16px; /* Golden ratio base spacing */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.lpfs-template-card:hover {
+    border-color: #2271b1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.lpfs-template-card.selected {
+    border-color: #00a32a;
+    background: #f0f9ff;
+}
+
+.lpfs-template-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #00a32a;
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.lpfs-template-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 6px 0; /* Golden ratio xs spacing */
+    color: #1d2327;
+}
+
+.lpfs-template-description {
+    font-size: 13px;
+    color: #646970;
+    margin: 0 0 10px 0; /* Golden ratio sm spacing */
+    line-height: 1.4;
+}
+
+.lpfs-template-preview {
+    display: flex;
+    gap: 6px; /* Golden ratio xs spacing */
+    flex-wrap: wrap;
+}
+
+.lpfs-template-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.lpfs-template-color[title]::before {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1d2327;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    margin-bottom: 4px;
+}
+
+.lpfs-template-color:hover::before {
+    opacity: 1;
+}
+
+.lpfs-apply-template-btn {
+    margin-top: 16px; /* Golden ratio base spacing */
+}

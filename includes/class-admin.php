@@ -98,6 +98,7 @@ class LPFS_Admin
             'Ubuntu' => 'Ubuntu',
             'Playfair Display' => 'Playfair Display',
             'Merriweather' => 'Merriweather',
+            'Inter' => 'Inter',
             'PT Sans' => 'PT Sans',
             'Roboto Condensed' => 'Roboto Condensed',
             'Noto Sans' => 'Noto Sans',
@@ -111,6 +112,48 @@ class LPFS_Admin
             'Oxygen' => 'Oxygen',
             'Titillium Web' => 'Titillium Web'
         ];
+    }
+
+    /**
+     * Handle cache clearing
+     * 
+     * @return void
+     */
+    private function handle_cache_clear(): void
+    {
+        if (!isset($_GET['clear_cache'])) {
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'lpfs_clear_cache')) {
+            return;
+        }
+
+        // Verify permissions
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        // Clear all caches
+        delete_transient(LPFS_Constants::STYLES_CACHE_KEY);
+        delete_transient(LPFS_Constants::FONTS_CACHE_KEY);
+        
+        // Delete the CSS file to force regeneration
+        $css_generator = new LPFS_CSS_Generator();
+        $css_generator->delete_css_file();
+        
+        // Regenerate CSS file with new timestamp
+        $css_generator->generate_css_file();
+        
+        // Add timestamp to force browser cache refresh
+        update_option(LPFS_Constants::CSS_FILE_KEY . '_bust', time());
+        
+        LPFS_Logger::info('Cache cleared manually by user');
+        
+        // Redirect with success message
+        wp_redirect(add_query_arg(['cache_cleared' => '1'], remove_query_arg('clear_cache', wp_get_referer())));
+        exit;
     }
 
     /**
@@ -258,6 +301,9 @@ class LPFS_Admin
      */
     public function render_admin_page(): void
     {
+        // Handle cache clearing
+        $this->handle_cache_clear();
+        
         // Handle deletion
         $this->handle_preset_deletion();
         
@@ -332,13 +378,27 @@ class LPFS_Admin
             <!-- 2. Add/Edit Form and Preview Side by Side -->
             <div class="lpfs-layout-container">
                 <div class="lpfs-form-container">
-                    <h2>
-                        <?php
-                        echo isset($edit_index)
-                            ? esc_html__('Edit Style', 'landing-page-forms-styler')
-                            : esc_html__('Add New Style', 'landing-page-forms-styler');
-                        ?>
-                    </h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: <?php echo LPFS_Constants::GOLDEN_SPACING['md']; ?>px; margin-bottom: <?php echo LPFS_Constants::GOLDEN_SPACING['lg']; ?>px;">
+                        <h2 style="margin: 0;">
+                            <?php
+                            echo isset($edit_index)
+                                ? esc_html__('Edit Style', 'landing-page-forms-styler')
+                                : esc_html__('Add New Style', 'landing-page-forms-styler');
+                            ?>
+                        </h2>
+                        <?php if (isset($edit_index)) : ?>
+                            <div style="display: flex; gap: <?php echo LPFS_Constants::GOLDEN_SPACING['base']; ?>px;">
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=' . LPFS_Constants::MENU_SLUG)); ?>" 
+                                   class="button button-secondary">
+                                    <?php esc_html_e('Create New Form', 'landing-page-forms-styler'); ?>
+                                </a>
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=' . LPFS_Constants::MENU_SLUG . '&clear_cache=1'), 'lpfs_clear_cache')); ?>" 
+                                   class="button button-secondary">
+                                    <?php esc_html_e('Clear Cache', 'landing-page-forms-styler'); ?>
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                     <form id="lpfs-form" method="post" action="options.php">
                         <?php settings_fields('lpfs_styles_group'); ?>
                         <?php wp_nonce_field('lpfs_save_preset', 'lpfs_nonce'); ?>
@@ -384,6 +444,40 @@ class LPFS_Admin
                             }
                         }
                         ?>
+
+                        <!-- Template Selection -->
+                        <div class="lpfs-templates-section">
+                            <div class="lpfs-templates-header">
+                                <h3 class="lpfs-templates-title"><?php esc_html_e('Choose a Template', 'landing-page-forms-styler'); ?></h3>
+                                <button type="button" class="button lpfs-apply-template-btn" id="lpfs-apply-template">
+                                    <?php esc_html_e('Apply Selected Template', 'landing-page-forms-styler'); ?>
+                                </button>
+                            </div>
+                            <div class="lpfs-templates-grid">
+                                <?php foreach (LPFS_Constants::STYLE_TEMPLATES as $template_key => $template) : ?>
+                                    <div class="lpfs-template-card" 
+                                         data-template="<?php echo esc_attr($template_key); ?>"
+                                         data-settings='<?php echo esc_attr(json_encode($template['settings'])); ?>'>
+                                        <h4 class="lpfs-template-name"><?php echo esc_html($template['name']); ?></h4>
+                                        <p class="lpfs-template-description"><?php echo esc_html($template['description']); ?></p>
+                                        <div class="lpfs-template-preview">
+                                            <div class="lpfs-template-color" 
+                                                 style="background-color: <?php echo esc_attr($template['settings']['input_bg_color']); ?>"
+                                                 title="Input Background"></div>
+                                            <div class="lpfs-template-color" 
+                                                 style="background-color: <?php echo esc_attr($template['settings']['input_border_color']); ?>"
+                                                 title="Input Border"></div>
+                                            <div class="lpfs-template-color" 
+                                                 style="background-color: <?php echo esc_attr($template['settings']['button_bg_color']); ?>"
+                                                 title="Button Background"></div>
+                                            <div class="lpfs-template-color" 
+                                                 style="background-color: <?php echo esc_attr($template['settings']['label_color']); ?>"
+                                                 title="Label Color"></div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
 
                         <?php $this->render_section_start('general', __('General Settings', 'landing-page-forms-styler')); ?>
                             <!-- Title -->
@@ -1030,6 +1124,15 @@ public function sanitize_presets($input)
         ?>
             <div class="notice notice-success is-dismissible">
                 <p><?php esc_html_e('Style duplicated successfully. You are now editing the duplicate.', LPFS_Constants::TEXT_DOMAIN); ?></p>
+            </div>
+        <?php
+        }
+        
+        // Display cache cleared message
+        if (isset($_GET['cache_cleared']) && $_GET['cache_cleared'] == '1') {
+        ?>
+            <div class="notice notice-success is-dismissible">
+                <p><?php esc_html_e('Cache cleared successfully. CSS file regenerated with fresh styles.', LPFS_Constants::TEXT_DOMAIN); ?></p>
             </div>
         <?php
         }
