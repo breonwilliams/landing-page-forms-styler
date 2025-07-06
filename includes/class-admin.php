@@ -228,6 +228,32 @@ class LPFS_Admin
     }
 
     /**
+     * Render a collapsible section
+     */
+    private function render_section_start($section_id, $title) {
+        ?>
+        <div class="lpfs-section" data-section-id="<?php echo esc_attr($section_id); ?>">
+            <div class="lpfs-section-header">
+                <h3 class="lpfs-section-title"><?php echo esc_html($title); ?></h3>
+                <span class="lpfs-section-toggle dashicons dashicons-arrow-down"></span>
+            </div>
+            <div class="lpfs-section-content">
+                <table class="form-table">
+        <?php
+    }
+    
+    /**
+     * Close a collapsible section
+     */
+    private function render_section_end() {
+        ?>
+                </table>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
      * Render the admin page: list table, add/edit form & live preview
      */
     public function render_admin_page(): void
@@ -359,8 +385,7 @@ class LPFS_Admin
                         }
                         ?>
 
-                        <table class="form-table">
-
+                        <?php $this->render_section_start('general', __('General Settings', 'landing-page-forms-styler')); ?>
                             <!-- Title -->
                             <tr>
                                 <th><label for="lpfs-title"><?php esc_html_e('Title', 'landing-page-forms-styler'); ?></label></th>
@@ -388,7 +413,9 @@ class LPFS_Admin
                                         value="<?php echo esc_attr($current['custom_class']); ?>">
                                 </td>
                             </tr>
+                        <?php $this->render_section_end(); ?>
 
+                        <?php $this->render_section_start('input_styles', __('Input Field Styles', 'landing-page-forms-styler')); ?>
                             <!-- Field Border Radius -->
                             <tr>
                                 <th><?php esc_html_e('Field Border Radius (px)', 'landing-page-forms-styler'); ?></th>
@@ -468,34 +495,6 @@ class LPFS_Admin
                                         data-var="input-focus-border-color"
                                         name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_focus_border_color]"
                                         value="<?php echo esc_attr($current['settings']['input_focus_border_color'] ?? ''); ?>">
-                                </td>
-                            </tr>
-
-                            <!-- Label Color -->
-                            <tr>
-                                <th><?php esc_html_e('Label Color', 'landing-page-forms-styler'); ?></th>
-                                <td>
-                                    <input
-                                        type="text"
-                                        class="lpfs-color-field"
-                                        data-var="label-color"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_color]"
-                                        value="<?php echo esc_attr($current['settings']['label_color'] ?? ''); ?>">
-                                </td>
-                            </tr>
-
-                            <!-- Button Border Radius -->
-                            <tr>
-                                <th><?php esc_html_e('Button Border Radius (px)', 'landing-page-forms-styler'); ?></th>
-                                <td>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        class="lpfs-number-field"
-                                        data-var="button-border-radius"
-                                        data-unit="px"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_radius]"
-                                        value="<?php echo esc_attr($current['settings']['button_border_radius'] ?? ''); ?>">
                                 </td>
                             </tr>
 
@@ -648,6 +647,21 @@ class LPFS_Admin
                                     <p class="description"><?php esc_html_e('Select a Google Font for input fields, textareas, and select elements.', 'landing-page-forms-styler'); ?></p>
                                 </td>
                             </tr>
+                        <?php $this->render_section_end(); ?>
+
+                        <?php $this->render_section_start('label_styles', __('Label Styles', 'landing-page-forms-styler')); ?>
+                            <!-- Label Color -->
+                            <tr>
+                                <th><?php esc_html_e('Label Color', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <input
+                                        type="text"
+                                        class="lpfs-color-field"
+                                        data-var="label-color"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_color]"
+                                        value="<?php echo esc_attr($current['settings']['label_color'] ?? ''); ?>">
+                                </td>
+                            </tr>
 
                             <!-- Label Font Family -->
                             <tr>
@@ -664,6 +678,23 @@ class LPFS_Admin
                                         <?php endforeach; ?>
                                     </select>
                                     <p class="description"><?php esc_html_e('Select a Google Font for form labels.', 'landing-page-forms-styler'); ?></p>
+                                </td>
+                            </tr>
+                        <?php $this->render_section_end(); ?>
+
+                        <?php $this->render_section_start('button_styles', __('Button Styles', 'landing-page-forms-styler')); ?>
+                            <!-- Button Border Radius -->
+                            <tr>
+                                <th><?php esc_html_e('Button Border Radius (px)', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        class="lpfs-number-field"
+                                        data-var="button-border-radius"
+                                        data-unit="px"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_radius]"
+                                        value="<?php echo esc_attr($current['settings']['button_border_radius'] ?? ''); ?>">
                                 </td>
                             </tr>
 
@@ -684,7 +715,7 @@ class LPFS_Admin
                                     <p class="description"><?php esc_html_e('Select a Google Font for buttons.', 'landing-page-forms-styler'); ?></p>
                                 </td>
                             </tr>
-                        </table>
+                        <?php $this->render_section_end(); ?>
 
                         <?php submit_button(); ?>
                     </form>

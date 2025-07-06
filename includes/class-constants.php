@@ -86,4 +86,46 @@ class LPFS_Constants {
         'unset',
         'currentcolor'
     ];
+    
+    // Golden Ratio
+    const GOLDEN_RATIO = 1.618;
+    
+    // Golden Ratio Spacing (in pixels for consistency with existing code)
+    const GOLDEN_SPACING = [
+        'xs'   => 6,    // 16 / φ² ≈ 6
+        'sm'   => 10,   // 16 / φ ≈ 10  
+        'base' => 16,   // Base unit
+        'md'   => 26,   // 16 × φ ≈ 26
+        'lg'   => 42,   // 16 × φ² ≈ 42
+        'xl'   => 68,   // 16 × φ³ ≈ 68
+    ];
+    
+    // Control groups for collapsible sections
+    const CONTROL_GROUPS = [
+        'general' => [
+            'title' => 'General Settings',
+            'fields' => ['title', 'custom_class']
+        ],
+        'input_styles' => [
+            'title' => 'Input Field Styles',
+            'fields' => [
+                'input_border_radius', 'input_border_width', 'input_border_color',
+                'input_text_color', 'input_bg_color', 'input_focus_border_color',
+                'input_font_family'
+            ]
+        ],
+        'button_styles' => [
+            'title' => 'Button Styles', 
+            'fields' => [
+                'button_border_radius', 'button_border_color', 'button_bg_color',
+                'button_text_color', 'button_hover_bg_color', 'button_hover_text_color',
+                'button_hover_border_color', 'button_font_size', 'button_font_weight',
+                'button_line_height', 'button_font_family'
+            ]
+        ],
+        'label_styles' => [
+            'title' => 'Label Styles',
+            'fields' => ['label_color', 'label_font_family']
+        ]
+    ];
 }

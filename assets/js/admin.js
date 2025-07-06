@@ -95,4 +95,63 @@ jQuery(function($){
       $('#lpfs-preview').hide().show(0);
     }, 100);
   }
+
+  // ===== Collapsible Sections Functionality =====
+  
+  // Initialize collapsible sections
+  function initCollapsibleSections() {
+    // Get stored section states from localStorage
+    var sectionStates = {};
+    try {
+      var stored = localStorage.getItem('lpfs_section_states');
+      if (stored) {
+        sectionStates = JSON.parse(stored);
+      }
+    } catch(e) {
+      // Ignore localStorage errors
+    }
+
+    // Apply stored states
+    $('.lpfs-section').each(function() {
+      var sectionId = $(this).data('section-id');
+      if (sectionId && sectionStates[sectionId] === 'collapsed') {
+        $(this).addClass('collapsed');
+      }
+    });
+
+    // Handle section header clicks
+    $('.lpfs-section-header').on('click', function(e) {
+      e.preventDefault();
+      
+      var $section = $(this).closest('.lpfs-section');
+      var sectionId = $section.data('section-id');
+      
+      // Toggle collapsed state
+      $section.toggleClass('collapsed');
+      
+      // Save state to localStorage
+      if (sectionId) {
+        try {
+          var states = {};
+          var stored = localStorage.getItem('lpfs_section_states');
+          if (stored) {
+            states = JSON.parse(stored);
+          }
+          
+          if ($section.hasClass('collapsed')) {
+            states[sectionId] = 'collapsed';
+          } else {
+            delete states[sectionId];
+          }
+          
+          localStorage.setItem('lpfs_section_states', JSON.stringify(states));
+        } catch(e) {
+          // Ignore localStorage errors
+        }
+      }
+    });
+  }
+
+  // Initialize sections when document is ready
+  initCollapsibleSections();
 });

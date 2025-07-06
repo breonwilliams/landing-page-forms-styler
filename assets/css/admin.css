@@ -211,3 +211,67 @@
         max-width: 100%;
     }
 }
+
+/* ===== Collapsible Sections with Golden Ratio Spacing ===== */
+.lpfs-section {
+    margin-bottom: 26px; /* Golden ratio md spacing */
+    border: 1px solid #ccd0d4;
+    background: #fff;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.lpfs-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 26px; /* Base and md golden ratio spacing */
+    background: #f8f9fa;
+    border-bottom: 1px solid #e2e4e7;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.lpfs-section-header:hover {
+    background: #f0f0f1;
+}
+
+.lpfs-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #1d2327;
+}
+
+.lpfs-section-toggle {
+    font-size: 12px;
+    color: #787c82;
+    transition: transform 0.2s ease;
+}
+
+.lpfs-section.collapsed .lpfs-section-toggle {
+    transform: rotate(-90deg);
+}
+
+.lpfs-section-content {
+    padding: 16px 26px; /* Base and md golden ratio spacing */
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.lpfs-section.collapsed .lpfs-section-content {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Apply golden ratio spacing to form table cells */
+.lpfs-section-content .form-table th {
+    padding-top: 10px; /* Golden ratio sm spacing */
+    padding-bottom: 10px;
+}
+
+.lpfs-section-content .form-table td {
+    padding-top: 10px; /* Golden ratio sm spacing */
+    padding-bottom: 10px;
+}
