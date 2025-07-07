@@ -26,56 +26,8 @@
   --button-font-family: inherit;
 }
 
-#lpfs-preview form {
-  background: #fff;
-  padding: 2rem;
-  border-radius: .5rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,.1);
-}
-#lpfs-preview label {
-  color: var(--label-color);
-  display: block;
-  margin-bottom: .25rem;
-  font-weight: 500;
-  font-family: var(--label-font-family);
-}
-#lpfs-preview input,
-#lpfs-preview textarea,
-#lpfs-preview select {
-  border-radius: var(--input-border-radius);
-  border-width: var(--input-border-width);
-  border-color: var(--input-border-color);
-  color: var(--input-text-color);
-  background-color: var(--input-bg-color);
-  font-family: var(--input-font-family);
-  padding: .5rem;
-  margin-bottom: 1rem;
-}
-#lpfs-preview input:focus,
-#lpfs-preview textarea:focus,
-#lpfs-preview select:focus {
-  border-color: var(--input-focus-border-color);
-}
-#lpfs-preview button {
-  border-radius: var(--button-border-radius);
-  border-width: var(--button-border-width);
-  border-color: var(--button-border-color);
-  background-color: var(--button-bg-color);
-  color: var(--button-text-color);
-  font-size: var(--button-font-size);
-  font-weight: var(--button-font-weight);
-  line-height: var(--button-line-height);
-  font-family: var(--button-font-family);
-  padding: .5rem;
-  cursor: pointer;
-}
-#lpfs-preview button:hover {
-  background-color: var(--button-hover-bg-color);
-  color: var(--button-hover-text-color);
-  border-color: var(--button-hover-border-color);
-}
 
-/* ===== Front-End Default Styles for Admin Live Preview ===== */
+/* ===== Admin Live Preview Styles ===== */
 #lpfs-preview form {
   background: #fff;
   padding: 2rem;
@@ -96,43 +48,52 @@
   display: block;
   margin-bottom: 0.25rem;
   font-weight: 500;
-  color: var(--label-color);
-  font-family: var(--label-font-family);
+  color: var(--label-color) !important;
+  font-family: var(--label-font-family) !important;
 }
 
-#lpfs-preview input,
+#lpfs-preview input:not([type="radio"]):not([type="checkbox"]),
 #lpfs-preview select,
 #lpfs-preview textarea {
-  width: 100%;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  border: var(--input-border-width) solid var(--input-border-color);
-  border-radius: var(--input-border-radius);
-  color: var(--input-text-color);
-  background-color: var(--input-bg-color);
-  font-family: var(--input-font-family);
+  width: 100% !important;
+  padding: 0.5rem !important;
+  margin-bottom: 1rem !important;
+  border: var(--input-border-width) solid var(--input-border-color) !important;
+  border-radius: var(--input-border-radius) !important;
+  color: var(--input-text-color) !important;
+  background-color: var(--input-bg-color) !important;
+  font-family: var(--input-font-family) !important;
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+#lpfs-preview input:not([type="radio"]):not([type="checkbox"]):focus,
+#lpfs-preview select:focus,
+#lpfs-preview textarea:focus {
+  border-color: var(--input-focus-border-color) !important;
+  outline: none !important;
 }
 
 #lpfs-preview button {
-  width: 100%;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  border: var(--button-border-width) solid var(--button-border-color);
-  border-radius: var(--button-border-radius);
-  background-color: var(--button-bg-color);
-  color: var(--button-text-color);
+  width: 100% !important;
+  padding: 0.5rem !important;
+  margin-bottom: 1rem !important;
+  border: var(--button-border-width) solid var(--button-border-color) !important;
+  border-radius: var(--button-border-radius) !important;
+  background-color: var(--button-bg-color) !important;
+  color: var(--button-text-color) !important;
   font-size: var(--button-font-size) !important;
   font-weight: var(--button-font-weight) !important;
   line-height: var(--button-line-height) !important;
   font-family: var(--button-font-family) !important;
   height: auto !important;
-  cursor: pointer;
+  cursor: pointer !important;
 }
 
 #lpfs-preview button:hover {
-  background-color: var(--button-hover-bg-color);
-  color: var(--button-hover-text-color);
-  border-color: var(--button-hover-border-color);
+  background-color: var(--button-hover-bg-color) !important;
+  color: var(--button-hover-text-color) !important;
+  border-color: var(--button-hover-border-color) !important;
 }
 
 #lpfs-preview input[type="radio"],
@@ -150,12 +111,6 @@
   appearance: none;
 }
 
-#lpfs-preview input:focus,
-#lpfs-preview textarea:focus,
-#lpfs-preview select:focus {
-  outline: none;
-  border-color: var(--input-focus-border-color);
-}
 
 #lpfs-preview .form-group {
   margin-bottom: 1rem;

@@ -445,6 +445,36 @@ class LPFS_Admin
                         }
                         ?>
 
+                        <?php $this->render_section_start('general', __('General Settings', 'landing-page-forms-styler')); ?>
+                            <!-- Title -->
+                            <tr>
+                                <th><label for="lpfs-title"><?php esc_html_e('Title', 'landing-page-forms-styler'); ?></label></th>
+                                <td>
+                                    <input
+                                        required
+                                        type="text"
+                                        id="lpfs-title"
+                                        class="regular-text"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][title]"
+                                        value="<?php echo esc_attr($current['title']); ?>">
+                                </td>
+                            </tr>
+
+                            <!-- Custom Class -->
+                            <tr>
+                                <th><label for="lpfs-class"><?php esc_html_e('Custom Class', 'landing-page-forms-styler'); ?></label></th>
+                                <td>
+                                    <input
+                                        required
+                                        type="text"
+                                        id="lpfs-class"
+                                        class="regular-text"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][custom_class]"
+                                        value="<?php echo esc_attr($current['custom_class']); ?>">
+                                </td>
+                            </tr>
+                        <?php $this->render_section_end(); ?>
+
                         <!-- Template Selection -->
                         <div class="lpfs-templates-section">
                             <div class="lpfs-templates-header">
@@ -478,36 +508,6 @@ class LPFS_Admin
                                 <?php endforeach; ?>
                             </div>
                         </div>
-
-                        <?php $this->render_section_start('general', __('General Settings', 'landing-page-forms-styler')); ?>
-                            <!-- Title -->
-                            <tr>
-                                <th><label for="lpfs-title"><?php esc_html_e('Title', 'landing-page-forms-styler'); ?></label></th>
-                                <td>
-                                    <input
-                                        required
-                                        type="text"
-                                        id="lpfs-title"
-                                        class="regular-text"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][title]"
-                                        value="<?php echo esc_attr($current['title']); ?>">
-                                </td>
-                            </tr>
-
-                            <!-- Custom Class -->
-                            <tr>
-                                <th><label for="lpfs-class"><?php esc_html_e('Custom Class', 'landing-page-forms-styler'); ?></label></th>
-                                <td>
-                                    <input
-                                        required
-                                        type="text"
-                                        id="lpfs-class"
-                                        class="regular-text"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][custom_class]"
-                                        value="<?php echo esc_attr($current['custom_class']); ?>">
-                                </td>
-                            </tr>
-                        <?php $this->render_section_end(); ?>
 
                         <?php $this->render_section_start('input_styles', __('Input Field Styles', 'landing-page-forms-styler')); ?>
                             <!-- Field Border Radius -->

@@ -1,7 +1,13 @@
 jQuery(function($){
   // helper to set a CSS var on the preview
   function setVar(name, value) {
-    $('#lpfs-preview').get(0).style.setProperty('--' + name, value);
+    var previewElement = $('#lpfs-preview').get(0);
+    if (previewElement) {
+      previewElement.style.setProperty('--' + name, value);
+      console.log('Set CSS variable --' + name + ' to: ' + value);
+    } else {
+      console.log('Preview element not found!');
+    }
   }
 
   // initialize from saved controls
@@ -13,7 +19,8 @@ jQuery(function($){
                  ? $field.val() + unit
                  : $field.val();
 
-    if ( val ) {
+
+    if ( val && name ) {
       // Handle font family initialization
       if (name && name.includes('font-family')) {
         if (val) {
@@ -29,35 +36,43 @@ jQuery(function($){
   });
 
   // when a color picker changes
+  console.log('Initializing color pickers, found:', $('.lpfs-color-field').length, 'fields');
   $('.lpfs-color-field').wpColorPicker({
     change: function(event, ui) {
       var name = $(this).data('var'),
           val  = ui.color.toString();
+      console.log('Color picker changed:', name, 'to:', val);
       setVar(name, val);
     },
     clear: function() {
       var name = $(this).data('var');
+      console.log('Color picker cleared:', name);
       setVar(name, ''); // resets to CSS default
     }
   });
 
   // when a number input changes
+  console.log('Setting up number field handlers, found:', $('.lpfs-number-field').length, 'fields');
   $('.lpfs-number-field').on('input', function(){
     var $f    = $(this),
         name  = $f.data('var'),
         unit  = $f.data('unit') || '',
         val   = $f.val() + unit;
+    console.log('Number field changed:', name, 'to:', val);
     setVar(name, val);
   });
 
   // when a select field changes (for font weight and font family)
+  console.log('Setting up select field handlers, found:', $('.lpfs-select-field').length, 'fields');
   $('.lpfs-select-field').on('change', function(){
     var $f    = $(this),
         name  = $f.data('var'),
         val   = $f.val();
     
+    console.log('Select field changed:', name, 'to:', val);
+    
     // Handle font family changes
-    if (name.includes('font-family')) {
+    if (name && name.includes('font-family')) {
       if (val) {
         // Load Google Font for preview
         loadGoogleFont(val);
@@ -199,31 +214,99 @@ jQuery(function($){
       if ($field.length) {
         // Handle color fields
         if ($field.hasClass('lpfs-color-field')) {
-          $field.val(value).trigger('change');
-          // Update color picker
-          $field.wpColorPicker('color', value);
+          $field.val(value);
+          
+          // Check if color picker is already initialized
+          try {
+            if ($field.data('wpColorPicker')) {
+              $field.wpColorPicker('color', value);
+            }
+          } catch(e) {
+            // Color picker not initialized, just set the value
+            console.log('Color picker not initialized for field:', $field.attr('name'));
+          }
+          
+          // Update CSS variable directly for immediate preview
+          var varName = $field.data('var');
+          if (varName) {
+            setVar(varName, value);
+          }
+          
+          // Manually trigger the change event for preview
+          $field.trigger('change');
         }
         // Handle select fields
         else if ($field.is('select')) {
-          $field.val(value).trigger('change');
+          $field.val(value);
+          $field.trigger('change');
+          
+          // Update CSS variable for selects that have data-var
+          var varName = $field.data('var');
+          var unit = $field.data('unit') || '';
+          if (varName) {
+            if (varName.includes('font-family')) {
+              if (value) {
+                loadGoogleFont(value);
+                setVar(varName, "'" + value + "', sans-serif");
+              } else {
+                setVar(varName, 'inherit');
+              }
+            } else {
+              setVar(varName, value + unit);
+            }
+          }
         }
         // Handle number and text fields
         else {
-          $field.val(value).trigger('input');
+          $field.val(value);
+          $field.trigger('input');
+          
+          // Update CSS variable for number fields that have data-var
+          var varName = $field.data('var');
+          var unit = $field.data('unit') || '';
+          if (varName) {
+            setVar(varName, value + unit);
+          }
         }
       }
     });
     
+    // Force a complete preview refresh
+    setTimeout(function() {
+      // Re-initialize all fields to make sure preview is synced
+      $('.lpfs-color-field, .lpfs-number-field, .lpfs-select-field').each(function(){
+        var $field = $(this),
+            name   = $field.data('var'),
+            unit   = $field.data('unit') || '',
+            val    = $field.is('.lpfs-number-field')
+                     ? $field.val() + unit
+                     : $field.val();
+
+        if ( val && name ) {
+          if (name && name.includes('font-family')) {
+            if (val) {
+              loadGoogleFont(val);
+              setVar(name, "'" + val + "', sans-serif");
+            } else {
+              setVar(name, 'inherit');
+            }
+          } else {
+            setVar(name, val);
+          }
+        }
+      });
+    }, 100);
+    
     // Show success message
-    var $notice = $('<div class="notice notice-success is-dismissible"><p>Template applied successfully!</p></div>');
+    var $notice = $('<div class="notice notice-success is-dismissible"><p>Template applied successfully! Please save the form to apply changes to the frontend.</p></div>');
     $('.lpfs-templates-section').before($notice);
     
-    // Auto-dismiss after 3 seconds
+    // Auto-dismiss after 5 seconds  
     setTimeout(function() {
       $notice.fadeOut(function() {
         $(this).remove();
       });
-    }, 3000);
+    }, 5000);
   }
   
   // Initialize on document ready
