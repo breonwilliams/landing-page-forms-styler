@@ -4,9 +4,6 @@ jQuery(function($){
     var previewElement = $('#lpfs-preview').get(0);
     if (previewElement) {
       previewElement.style.setProperty('--' + name, value);
-      console.log('Set CSS variable --' + name + ' to: ' + value);
-    } else {
-      console.log('Preview element not found!');
     }
   }
 
@@ -36,40 +33,32 @@ jQuery(function($){
   });
 
   // when a color picker changes
-  console.log('Initializing color pickers, found:', $('.lpfs-color-field').length, 'fields');
   $('.lpfs-color-field').wpColorPicker({
     change: function(event, ui) {
       var name = $(this).data('var'),
           val  = ui.color.toString();
-      console.log('Color picker changed:', name, 'to:', val);
       setVar(name, val);
     },
     clear: function() {
       var name = $(this).data('var');
-      console.log('Color picker cleared:', name);
       setVar(name, ''); // resets to CSS default
     }
   });
 
   // when a number input changes
-  console.log('Setting up number field handlers, found:', $('.lpfs-number-field').length, 'fields');
   $('.lpfs-number-field').on('input', function(){
     var $f    = $(this),
         name  = $f.data('var'),
         unit  = $f.data('unit') || '',
         val   = $f.val() + unit;
-    console.log('Number field changed:', name, 'to:', val);
     setVar(name, val);
   });
 
   // when a select field changes (for font weight and font family)
-  console.log('Setting up select field handlers, found:', $('.lpfs-select-field').length, 'fields');
   $('.lpfs-select-field').on('change', function(){
     var $f    = $(this),
         name  = $f.data('var'),
         val   = $f.val();
-    
-    console.log('Select field changed:', name, 'to:', val);
     
     // Handle font family changes
     if (name && name.includes('font-family')) {
@@ -223,7 +212,6 @@ jQuery(function($){
             }
           } catch(e) {
             // Color picker not initialized, just set the value
-            console.log('Color picker not initialized for field:', $field.attr('name'));
           }
           
           // Update CSS variable directly for immediate preview

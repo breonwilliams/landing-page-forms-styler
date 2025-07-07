@@ -592,19 +592,60 @@ class LPFS_Admin
                                 </td>
                             </tr>
 
-                            <!-- Button Border Color -->
+
+                            <!-- Input Font Family -->
                             <tr>
-                                <th><?php esc_html_e('Button Border Color', 'landing-page-forms-styler'); ?></th>
+                                <th><?php esc_html_e('Input Font Family', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <select
+                                        class="lpfs-select-field"
+                                        data-var="input-font-family"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_font_family]">
+                                        <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['input_font_family'] ?? '', $value); ?>>
+                                                <?php echo esc_html($label); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description"><?php esc_html_e('Select a Google Font for input fields, textareas, and select elements.', 'landing-page-forms-styler'); ?></p>
+                                </td>
+                            </tr>
+                        <?php $this->render_section_end(); ?>
+
+                        <?php $this->render_section_start('label_styles', __('Label Styles', 'landing-page-forms-styler')); ?>
+                            <!-- Label Color -->
+                            <tr>
+                                <th><?php esc_html_e('Label Color', 'landing-page-forms-styler'); ?></th>
                                 <td>
                                     <input
                                         type="text"
                                         class="lpfs-color-field"
-                                        data-var="button-border-color"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_color]"
-                                        value="<?php echo esc_attr($current['settings']['button_border_color'] ?? ''); ?>">
+                                        data-var="label-color"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_color]"
+                                        value="<?php echo esc_attr($current['settings']['label_color'] ?? ''); ?>">
                                 </td>
                             </tr>
 
+                            <!-- Label Font Family -->
+                            <tr>
+                                <th><?php esc_html_e('Label Font Family', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <select
+                                        class="lpfs-select-field"
+                                        data-var="label-font-family"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_font_family]">
+                                        <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['label_font_family'] ?? '', $value); ?>>
+                                                <?php echo esc_html($label); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description"><?php esc_html_e('Select a Google Font for form labels.', 'landing-page-forms-styler'); ?></p>
+                                </td>
+                            </tr>
+                        <?php $this->render_section_end(); ?>
+
+                        <?php $this->render_section_start('button_styles', __('Button Styles', 'landing-page-forms-styler')); ?>
                             <!-- Button Background Color -->
                             <tr>
                                 <th><?php esc_html_e('Button Background Color', 'landing-page-forms-styler'); ?></th>
@@ -628,6 +669,34 @@ class LPFS_Admin
                                         data-var="button-text-color"
                                         name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_text_color]"
                                         value="<?php echo esc_attr($current['settings']['button_text_color'] ?? ''); ?>">
+                                </td>
+                            </tr>
+
+                            <!-- Button Border Color -->
+                            <tr>
+                                <th><?php esc_html_e('Button Border Color', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <input
+                                        type="text"
+                                        class="lpfs-color-field"
+                                        data-var="button-border-color"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_color]"
+                                        value="<?php echo esc_attr($current['settings']['button_border_color'] ?? ''); ?>">
+                                </td>
+                            </tr>
+
+                            <!-- Button Border Radius -->
+                            <tr>
+                                <th><?php esc_html_e('Button Border Radius (px)', 'landing-page-forms-styler'); ?></th>
+                                <td>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        class="lpfs-number-field"
+                                        data-var="button-border-radius"
+                                        data-unit="px"
+                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_radius]"
+                                        value="<?php echo esc_attr($current['settings']['button_border_radius'] ?? ''); ?>">
                                 </td>
                             </tr>
 
@@ -721,74 +790,6 @@ class LPFS_Admin
                                         name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_line_height]"
                                         value="<?php echo esc_attr($current['settings']['button_line_height'] ?? ''); ?>">
                                     <p class="description"><?php esc_html_e('Use values like 1.2, 1.5, etc. Leave empty for default.', 'landing-page-forms-styler'); ?></p>
-                                </td>
-                            </tr>
-
-                            <!-- Input Font Family -->
-                            <tr>
-                                <th><?php esc_html_e('Input Font Family', 'landing-page-forms-styler'); ?></th>
-                                <td>
-                                    <select
-                                        class="lpfs-select-field"
-                                        data-var="input-font-family"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][input_font_family]">
-                                        <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
-                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['input_font_family'] ?? '', $value); ?>>
-                                                <?php echo esc_html($label); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <p class="description"><?php esc_html_e('Select a Google Font for input fields, textareas, and select elements.', 'landing-page-forms-styler'); ?></p>
-                                </td>
-                            </tr>
-                        <?php $this->render_section_end(); ?>
-
-                        <?php $this->render_section_start('label_styles', __('Label Styles', 'landing-page-forms-styler')); ?>
-                            <!-- Label Color -->
-                            <tr>
-                                <th><?php esc_html_e('Label Color', 'landing-page-forms-styler'); ?></th>
-                                <td>
-                                    <input
-                                        type="text"
-                                        class="lpfs-color-field"
-                                        data-var="label-color"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_color]"
-                                        value="<?php echo esc_attr($current['settings']['label_color'] ?? ''); ?>">
-                                </td>
-                            </tr>
-
-                            <!-- Label Font Family -->
-                            <tr>
-                                <th><?php esc_html_e('Label Font Family', 'landing-page-forms-styler'); ?></th>
-                                <td>
-                                    <select
-                                        class="lpfs-select-field"
-                                        data-var="label-font-family"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][label_font_family]">
-                                        <?php foreach ($this->get_google_fonts() as $value => $label) : ?>
-                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current['settings']['label_font_family'] ?? '', $value); ?>>
-                                                <?php echo esc_html($label); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <p class="description"><?php esc_html_e('Select a Google Font for form labels.', 'landing-page-forms-styler'); ?></p>
-                                </td>
-                            </tr>
-                        <?php $this->render_section_end(); ?>
-
-                        <?php $this->render_section_start('button_styles', __('Button Styles', 'landing-page-forms-styler')); ?>
-                            <!-- Button Border Radius -->
-                            <tr>
-                                <th><?php esc_html_e('Button Border Radius (px)', 'landing-page-forms-styler'); ?></th>
-                                <td>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        class="lpfs-number-field"
-                                        data-var="button-border-radius"
-                                        data-unit="px"
-                                        name="<?php echo LPFS_Constants::OPTION_KEY; ?>[<?php echo $index; ?>][settings][button_border_radius]"
-                                        value="<?php echo esc_attr($current['settings']['button_border_radius'] ?? ''); ?>">
                                 </td>
                             </tr>
 
