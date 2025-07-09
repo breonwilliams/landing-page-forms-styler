@@ -23,8 +23,7 @@ class LPFS_Admin
     {
         add_action('admin_menu',           [$this, 'register_admin_menu']);
         add_action('admin_init',           [$this, 'register_settings']);
-        add_action('admin_init',           [$this, 'handle_export']);
-        add_action('admin_init',           [$this, 'handle_import']);
+        add_action('admin_init',           [$this, 'handle_admin_actions'], 5); // Run early with priority 5
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
         add_filter('redirect_post_location', [$this, 'maintain_edit_context']);
         add_action('admin_notices', [$this, 'display_admin_notices']);
@@ -115,6 +114,36 @@ class LPFS_Admin
     }
 
     /**
+     * Handle admin actions early before any output
+     * This prevents "headers already sent" errors
+     * 
+     * @return void
+     */
+    public function handle_admin_actions(): void
+    {
+        // Only handle actions on our admin page
+        if (!isset($_GET['page']) || $_GET['page'] !== LPFS_Constants::MENU_SLUG) {
+            return;
+        }
+
+
+        // Handle export (check this first as it needs to output and exit)
+        $this->handle_export();
+        
+        // Handle import (check this before other actions)
+        $this->handle_import();
+
+        // Handle cache clearing
+        $this->handle_cache_clear();
+        
+        // Handle deletion
+        $this->handle_preset_deletion();
+        
+        // Handle duplication
+        $this->handle_preset_duplication();
+    }
+
+    /**
      * Handle cache clearing
      * 
      * @return void
@@ -167,6 +196,7 @@ class LPFS_Admin
             return;
         }
 
+
         // Verify user has proper permissions
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'landing-page-forms-styler'));
@@ -179,6 +209,7 @@ class LPFS_Admin
 
         $idx = absint($_GET['delete']);
         $presets = get_option(LPFS_Constants::OPTION_KEY, []);
+        
 
         if (isset($presets[$idx])) {
             $deleted_preset = $presets[$idx];
@@ -196,6 +227,8 @@ class LPFS_Admin
             // Regenerate CSS file
             $css_generator = new LPFS_CSS_Generator();
             $css_generator->generate_css_file();
+            
+            
             wp_redirect(add_query_arg('deleted', '1', admin_url('admin.php?page=lpfs-styles')));
             exit;
         }
@@ -301,15 +334,6 @@ class LPFS_Admin
      */
     public function render_admin_page(): void
     {
-        // Handle cache clearing
-        $this->handle_cache_clear();
-        
-        // Handle deletion
-        $this->handle_preset_deletion();
-        
-        // Handle duplication
-        $this->handle_preset_duplication();
-
         // Load existing presets
         $presets = get_option(LPFS_Constants::OPTION_KEY, []);
         $edit_index = isset($_GET['preset']) ? absint($_GET['preset']) : null;
@@ -412,6 +436,9 @@ class LPFS_Admin
 
                         <?php $index = isset($edit_index) ? $edit_index : count($presets); ?>
                         <input type="hidden" name="lpfs_edit_index" value="<?php echo esc_attr($index); ?>">
+                        <?php if (isset($edit_index) && isset($current['custom_class'])): ?>
+                        <input type="hidden" name="lpfs_edit_class" value="<?php echo esc_attr($current['custom_class']); ?>">
+                        <?php endif; ?>
                         <input type="hidden" name="<?php echo esc_attr(LPFS_Constants::OPTION_KEY); ?>[<?php echo $index; ?>]" value="1">
 
                         <?php
@@ -419,7 +446,7 @@ class LPFS_Admin
                         if (is_array($presets)) {
                             foreach ($presets as $i => $p) {
                                 // skip the one we are editing / adding
-                                if ($i === $index) {
+                                if ($i == $index) {
                                     continue;
                                 }
                                 // Title & Class
@@ -886,6 +913,8 @@ public function sanitize_and_validate_presets($input)
  */
 public function sanitize_presets($input)
 {
+    // Debug: Log the raw input
+    
     if (!is_array($input)) {
         return [];
     }
@@ -916,13 +945,17 @@ public function sanitize_presets($input)
     $is_update = false;
     $edit_index = isset($_POST['lpfs_edit_index']) ? absint($_POST['lpfs_edit_index']) : null;
     $existing = get_option(LPFS_Constants::OPTION_KEY, []);
+    
+    
     if ($edit_index !== null && isset($existing[$edit_index])) {
         $is_update = true;
     }
 
     foreach ($input as $idx => $preset) {
+        
         $title = sanitize_text_field($preset['title'] ?? '');
         $custom_class = sanitize_html_class($preset['custom_class'] ?? '');
+
 
         // Skip any blank preset (must have both title AND custom class)
         if ('' === $title || '' === $custom_class) {
@@ -930,7 +963,19 @@ public function sanitize_presets($input)
         }
 
         $raw = is_array($preset['settings']) ? $preset['settings'] : [];
+        
+        // IMPORTANT: For presets being preserved (not the one being edited),
+        // we need to keep ALL their existing settings, not start with empty array
         $s = [];
+        
+        // Check if this is a preset being preserved (not the one being edited)
+        $is_preserved = ($edit_index !== null && $idx != $edit_index);
+        
+        
+        // If this is a preserved preset, start with all existing settings
+        if ($is_preserved && isset($existing[$idx]['settings'])) {
+            $s = $existing[$idx]['settings'];
+        }
 
         // Process numeric fields with stricter validation
         foreach ($numeric_fields as $field) {
@@ -954,6 +999,9 @@ public function sanitize_presets($input)
                     default:
                         $s[$field] = max(0, $value);
                 }
+            } elseif (!$is_preserved && isset($raw[$field])) {
+                // For the preset being edited, if field is present but not numeric, don't include it
+                unset($s[$field]);
             }
         }
 
@@ -964,6 +1012,9 @@ public function sanitize_presets($input)
                 if ($color !== false) {
                     $s[$field] = $color;
                 }
+            } elseif (!$is_preserved && isset($raw[$field])) {
+                // For the preset being edited, if field is present but empty/invalid, don't include it
+                unset($s[$field]);
             }
         }
 
@@ -973,6 +1024,8 @@ public function sanitize_presets($input)
             if (in_array($raw['button_font_weight'], $allowed_weights)) {
                 $s['button_font_weight'] = $raw['button_font_weight'];
             }
+        } elseif (!$is_preserved && isset($raw['button_font_weight'])) {
+            unset($s['button_font_weight']);
         }
 
         // Handle line height as decimal with validation
@@ -982,6 +1035,8 @@ public function sanitize_presets($input)
             if ($line_height >= LPFS_Constants::LINE_HEIGHT_MIN && $line_height <= LPFS_Constants::LINE_HEIGHT_MAX) {
                 $s['button_line_height'] = $line_height;
             }
+        } elseif (!$is_preserved && isset($raw['button_line_height'])) {
+            unset($s['button_line_height']);
         }
 
         // Process font family fields
@@ -991,6 +1046,8 @@ public function sanitize_presets($input)
         foreach ($font_fields as $field) {
             if (isset($raw[$field]) && in_array($raw[$field], $allowed_fonts)) {
                 $s[$field] = sanitize_text_field($raw[$field]);
+            } elseif (!$is_preserved && isset($raw[$field])) {
+                unset($s[$field]);
             }
         }
 
@@ -999,6 +1056,7 @@ public function sanitize_presets($input)
             'custom_class' => $custom_class,
             'settings' => $s,
         ];
+        
     }
 
     // Add success message and log
@@ -1035,8 +1093,10 @@ public function sanitize_presets($input)
     $css_generator = new LPFS_CSS_Generator();
     $css_generator->generate_css_file();
 
-    // Re-index to 0,1,2… so new entries append properly
-    return array_values($clean);
+    // Don't reindex - preserve the original indices to prevent forms from swapping positions
+    // array_values() was causing forms to change positions when gaps existed in indices
+    
+    return $clean;
 }
 
     /**
@@ -1044,19 +1104,39 @@ public function sanitize_presets($input)
      */
     public function maintain_edit_context($location)
     {
+        
         // Only process our plugin's settings page
         if (
-            strpos($location, 'options-general.php?page=lpfs') === false
-            && strpos($location, 'admin.php?page=lpfs') === false
+            strpos($location, 'page=' . LPFS_Constants::MENU_SLUG) === false
         ) {
             return $location;
         }
 
-        // Check if we were editing a specific preset
-        if (isset($_POST['lpfs_edit_index'])) {
+        // Check if we were editing a specific preset by class
+        if (isset($_POST['lpfs_edit_class'])) {
+            $edit_class = sanitize_text_field($_POST['lpfs_edit_class']);
+            
+            // Find the index of the preset with this class after save
+            $presets = get_option(LPFS_Constants::OPTION_KEY, []);
+            
+            foreach ($presets as $idx => $preset) {
+                if (isset($preset['custom_class']) && $preset['custom_class'] === $edit_class) {
+                    // Ensure we redirect back to the same preset
+                    $location = add_query_arg('preset', $idx, $location);
+                    break;
+                }
+            }
+        } elseif (isset($_POST['lpfs_edit_index'])) {
+            // Fallback to index-based redirect for new presets
             $edit_index = absint($_POST['lpfs_edit_index']);
-            // Ensure we redirect back to the same preset
-            $location = add_query_arg('preset', $edit_index, $location);
+            
+            $presets_count = count(get_option(LPFS_Constants::OPTION_KEY, []));
+            
+            // For new presets, the index will be the last one
+            if ($edit_index >= $presets_count - 1) {
+                $new_index = $presets_count - 1;
+                $location = add_query_arg('preset', $new_index, $location);
+            }
         }
 
         return $location;
@@ -1194,10 +1274,6 @@ public function sanitize_presets($input)
      */
     public function handle_export() {
         // Check if export action is requested
-        if (!isset($_GET['page']) || $_GET['page'] !== LPFS_Constants::MENU_SLUG) {
-            return;
-        }
-        
         if (!isset($_GET['action']) || $_GET['action'] !== 'export') {
             return;
         }

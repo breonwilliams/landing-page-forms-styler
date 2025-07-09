@@ -196,9 +196,25 @@ jQuery(function($){
   
   // Apply template settings to form fields
   function applyTemplateSettings(settings) {
+    // Get the current edit index from the form
+    var editIndex = $('input[name="lpfs_edit_index"]').val();
+    
     // Apply each setting
     $.each(settings, function(key, value) {
-      var $field = $('[name$="[settings][' + key + ']"]');
+      // Try multiple selectors to find the right field
+      var selector1 = '[name="lp_forms_styles[' + editIndex + '][settings][' + key + ']"]:visible';
+      var selector2 = '[name="lp_forms_styles[' + editIndex + '][settings][' + key + ']"]';
+      var selector3 = 'input[name$="[settings][' + key + ']"]:visible, select[name$="[settings][' + key + ']"]:visible';
+      
+      var $field = $(selector1);
+      
+      if (!$field.length) {
+        $field = $(selector2);
+      }
+      
+      if (!$field.length) {
+        $field = $(selector3);
+      }
       
       if ($field.length) {
         // Handle color fields
